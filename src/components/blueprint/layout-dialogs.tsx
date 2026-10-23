@@ -89,11 +89,11 @@ export function GenerateLayoutDialog({ ev, open, onOpenChange, onGenerate }: { e
         </DialogHeader>
 
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
-          <Label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
+          <Label htmlFor="ai-layout-prompt" className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold">
             <Sparkles className="size-3.5 text-primary" /> Tell the AI what you want (optional)
           </Label>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Big dance floor, mandap for the ceremony, a kids corner and a separate bar…" className="min-h-14 flex-1 bg-card" />
+            <Textarea id="ai-layout-prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Big dance floor, mandap for the ceremony, a kids corner and a separate bar…" className="min-h-14 flex-1 bg-card" />
             <Button onClick={askAi} disabled={loading} variant="outline" className="gap-1.5 self-end">
               {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />} Ask AI
             </Button>
@@ -102,8 +102,8 @@ export function GenerateLayoutDialog({ ev, open, onOpenChange, onGenerate }: { e
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Venue</Label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs text-muted-foreground">Venue</span>
             <NativeSelect value={venueChoice} onChange={(e) => setVenueChoice(e.target.value)}>
               <option value="current">Keep current ({current.venue.widthFt}×{current.venue.lengthFt} ft)</option>
               {VENUE_TEMPLATES.map((t) => (
@@ -112,13 +112,13 @@ export function GenerateLayoutDialog({ ev, open, onOpenChange, onGenerate }: { e
                 </option>
               ))}
             </NativeSelect>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Guests to seat</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs text-muted-foreground">Guests to seat</span>
             <Input type="number" min={1} value={guests} onChange={(e) => setGuests(Math.max(1, Number(e.target.value)))} className="h-8" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Seating style</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs text-muted-foreground">Seating style</span>
             <NativeSelect value={intent.tableKind} onChange={(e) => setIntent((i) => ({ ...i, tableKind: e.target.value as TableKind }))}>
               {TABLE_KINDS.map((k) => (
                 <option key={k} value={k}>
@@ -126,11 +126,11 @@ export function GenerateLayoutDialog({ ev, open, onOpenChange, onGenerate }: { e
                 </option>
               ))}
             </NativeSelect>
-          </div>
+          </label>
         </div>
 
         <div>
-          <Label className="mb-2 block text-xs text-muted-foreground">Include</Label>
+          <p className="mb-2 block text-xs text-muted-foreground">Include</p>
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             {OPTION_KINDS.map((k) => {
               const d = getDef(k);

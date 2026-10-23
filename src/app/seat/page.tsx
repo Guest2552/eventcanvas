@@ -34,7 +34,7 @@ export default function SeatPage() {
 
   return (
     <div className="bg-festive flex min-h-screen flex-col items-center p-4">
-      <div className="w-full max-w-md space-y-4">
+      <main id="main" tabIndex={-1} className="w-full max-w-md space-y-4 outline-none">
         <div className="flex justify-center pt-2">
           <Brand href="#" />
         </div>
@@ -74,7 +74,7 @@ export default function SeatPage() {
           </div>
           <p className="p-3 text-center text-xs text-muted-foreground">Your table is highlighted. Pinch or scroll to zoom. The stage is at the top.</p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

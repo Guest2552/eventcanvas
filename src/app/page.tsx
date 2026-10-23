@@ -70,7 +70,7 @@ export default function Home() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <section className="grid items-center gap-10 py-10 lg:grid-cols-[1.1fr_1fr] lg:py-16">
           <div>
             <Badge variant="secondary" className="mb-4 gap-1.5">

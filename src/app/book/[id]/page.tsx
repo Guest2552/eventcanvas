@@ -10,6 +10,7 @@ import { BlueprintCanvas } from "@/components/blueprint/canvas";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { takenSeatIds, vipSeatIds } from "@/lib/booking";
 import { allSeats } from "@/lib/engine/geometry";
 import { formatDate, formatTime, inr } from "@/lib/format";
@@ -151,7 +152,7 @@ function Book() {
         </div>
       </header>
 
-      <div className="relative min-h-0 flex-1">
+      <main id="main" tabIndex={-1} className="relative min-h-0 flex-1 outline-none">
         <BlueprintCanvas
           layout={layout}
           mode="seats"
@@ -173,24 +174,42 @@ function Book() {
           <Legend color="#d6d3d1" border="#d6d3d1" label="Sold" />
         </div>
         <p className="absolute bottom-3 left-3 rounded-md bg-card/90 px-2 py-1 text-[11px] text-muted-foreground shadow-sm">All eyes this way: the stage is at the top 🎤</p>
-      </div>
+      </main>
 
       <footer className="border-t bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5" aria-live="polite">
             {selected.length === 0 ? (
               <span className="text-sm text-muted-foreground">Tap seats on the map to select (up to {ev.booking.maxPerOrder})</span>
             ) : (
               selected.map((sid) => (
                 <span key={sid} className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-900">
                   {seatById.get(sid)?.tableLabel}-{(seatById.get(sid)?.index ?? 0) + 1}
-                  <button onClick={() => toggle(sid)} aria-label="Remove seat">
+                  <button onClick={() => toggle(sid)} aria-label={`Remove seat ${seatById.get(sid)?.tableLabel} ${(seatById.get(sid)?.index ?? 0) + 1}`}>
                     <X className="size-3" />
                   </button>
                 </span>
               ))
             )}
           </div>
+          {/* Keyboard and screen-reader alternative to tapping seats on the map */}
+          <NativeSelect value="" onChange={(e) => e.target.value && toggle(e.target.value)} aria-label="Add a seat without using the map" className="w-48">
+            <option value="">Add a seat…</option>
+            {layout.elements
+              .filter((el) => seats.some((s) => s.elementId === el.id && !taken.has(s.id) && !selected.includes(s.id)))
+              .map((el) => (
+                <optgroup key={el.id} label={el.label}>
+                  {seats
+                    .filter((s) => s.elementId === el.id && !taken.has(s.id) && !selected.includes(s.id))
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {el.label} seat {s.index + 1} · {vip.has(s.id) ? "VIP " : ""}
+                        {inr(price(s.id))}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+          </NativeSelect>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="h-9 w-44" aria-label="Your name" />
           <Button size="lg" className="h-9 gap-1.5" disabled={selected.length === 0} onClick={confirm}>
             <Ticket className="size-4" /> {selected.length ? `Pay ${inr(total)}` : "Select seats"}

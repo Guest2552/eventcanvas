@@ -1,17 +1,20 @@
 import { generateText, Output } from "ai";
 import { defaultIntent } from "@/lib/engine/layout";
-import { PLANNER_PERSONA, providerOptions, readJson, retriesFor, withFallback } from "@/lib/ai/provider";
+import { guard } from "@/lib/ai/guard";
+import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { layoutRequest } from "@/lib/ai/requests";
 import { layoutIntentSchema } from "@/lib/ai/schemas";
-import type { EventType, Venue } from "@/lib/types";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const body = await readJson<{ prompt?: string; event: { type: EventType; guestCount: number; theme?: string; city?: string; notes?: string }; venue: Venue }>(req);
+  const g = await guard(req, layoutRequest, { route: "layout", limit: 10 });
+  if ("response" in g) return g.response;
+  const body = g.data;
   const { event, venue } = body;
   const fallback = defaultIntent(event.type, event.guestCount, venue.indoor);
 
-  const ai = await withFallback(async (m) => {
+  const ai = await withCachedFallback(cacheKey("layout", g.data), async (m) => {
     const { output } = await generateText({
       model: m.model,
       providerOptions: providerOptions(m),

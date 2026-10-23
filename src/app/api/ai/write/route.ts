@@ -1,5 +1,7 @@
 import { createTextStreamResponse, streamText, toTextStream } from "ai";
-import { PLANNER_PERSONA, readJson, resilientModel } from "@/lib/ai/provider";
+import { guard } from "@/lib/ai/guard";
+import { PLANNER_PERSONA, resilientModel } from "@/lib/ai/provider";
+import { writeRequest } from "@/lib/ai/requests";
 
 export const maxDuration = 60;
 
@@ -13,7 +15,9 @@ const KINDS: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
-  const body = await readJson<{ kind: string; details?: string; tone?: string; language?: string; event: Record<string, unknown> }>(req);
+  const g = await guard(req, writeRequest, { route: "write", limit: 20 });
+  if ("response" in g) return g.response;
+  const body = g.data;
   const model = resilientModel();
   if (!model) return new Response("AI unavailable", { status: 503, headers: { "x-ai-source": "offline" } });
 

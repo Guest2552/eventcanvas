@@ -1,6 +1,6 @@
 "use client";
 
-import { DndContext, type DragEndEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { Check, Copy, Loader2, Plus, Sparkles, Star, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +30,8 @@ export default function VendorsPage() {
   const { ev, layout, update } = useCurrentEvent();
   const [editing, setEditing] = useState<Vendor | null>(null);
   const checklist = useMemo(() => (ev ? vendorChecklist(ev, layout) : []), [ev, layout]);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // Keyboard sensor: focus a card, press Space to lift, arrow keys to move, Space to drop
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor));
   if (!ev) return null;
 
   const onDragEnd = (e: DragEndEvent) => {
@@ -218,12 +218,12 @@ function VendorDialog({ ev, vendor, zones, onClose, onSave, onDelete }: { ev: Ev
           <DialogTitle>{exists ? "Edit vendor" : "Add vendor"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Name</Label>
+          <label className="block space-y-1 sm:col-span-2">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Name</span>
             <Input value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} placeholder="e.g. Annapoorna Caterers" autoFocus />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Category</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Category</span>
             <NativeSelect value={v.category} onChange={(e) => setV({ ...v, category: e.target.value as VendorCategory })}>
               {Object.entries(VENDOR_CATEGORIES).map(([k, c]) => (
                 <option key={k} value={k}>
@@ -231,9 +231,9 @@ function VendorDialog({ ev, vendor, zones, onClose, onSave, onDelete }: { ev: Ev
                 </option>
               ))}
             </NativeSelect>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Status</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Status</span>
             <NativeSelect value={v.status} onChange={(e) => setV({ ...v, status: e.target.value as VendorStatus })}>
               {VENDOR_STATUSES.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -241,25 +241,25 @@ function VendorDialog({ ev, vendor, zones, onClose, onSave, onDelete }: { ev: Ev
                 </option>
               ))}
             </NativeSelect>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Quote (₹)</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Quote (₹)</span>
             <Input type="number" value={v.quote} onChange={(e) => setV({ ...v, quote: Number(e.target.value) })} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Paid (₹)</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Paid (₹)</span>
             <Input type="number" value={v.paid} onChange={(e) => setV({ ...v, paid: Number(e.target.value) })} />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Contact</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Contact</span>
             <Input value={v.contact ?? ""} onChange={(e) => setV({ ...v, contact: e.target.value })} placeholder="Phone or email" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Arrival time on the day</Label>
+          </label>
+          <label className="block space-y-1">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Arrival time on the day</span>
             <Input type="time" value={v.arrivalTime ?? ""} onChange={(e) => setV({ ...v, arrivalTime: e.target.value || undefined })} />
-          </div>
+          </label>
           <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Rating</Label>
+            <p id="vendor-rating-label" className="text-sm font-medium text-xs">Rating</p>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} onClick={() => setV({ ...v, rating: n })} aria-label={`${n} stars`}>
@@ -270,7 +270,7 @@ function VendorDialog({ ev, vendor, zones, onClose, onSave, onDelete }: { ev: Ev
           </div>
           {zones.length > 0 && (
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">Works in these blueprint zones</Label>
+              <p className="text-sm font-medium text-xs">Works in these blueprint zones</p>
               <div className="flex flex-wrap gap-2">
                 {zones.map((z) => (
                   <label key={z.id} className="flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs">
@@ -281,10 +281,10 @@ function VendorDialog({ ev, vendor, zones, onClose, onSave, onDelete }: { ev: Ev
               </div>
             </div>
           )}
-          <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Setup instructions</Label>
+          <label className="block space-y-1 sm:col-span-2">
+            <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Setup instructions</span>
             <Textarea value={v.setupNotes ?? ""} onChange={(e) => setV({ ...v, setupNotes: e.target.value })} placeholder="Power points needed, load-in gate, setup deadline…" className="min-h-16" />
-          </div>
+          </label>
         </div>
 
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">

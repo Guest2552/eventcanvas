@@ -1,6 +1,8 @@
 import { convertToModelMessages, createUIMessageStreamResponse, streamText, tool, toUIMessageStream, type UIMessage } from "ai";
 import { z } from "zod";
-import { PLANNER_PERSONA, readJson, resilientModel } from "@/lib/ai/provider";
+import { guard } from "@/lib/ai/guard";
+import { PLANNER_PERSONA, resilientModel } from "@/lib/ai/provider";
+import { chatRequest } from "@/lib/ai/requests";
 import { BUDGET_IDS, VENDOR_IDS } from "@/lib/ai/schemas";
 import { TABLE_KINDS } from "@/lib/catalog/elements";
 
@@ -51,7 +53,9 @@ const tools = {
 };
 
 export async function POST(req: Request) {
-  const { messages, context } = await readJson<{ messages: UIMessage[]; context: unknown }>(req, 600_000);
+  const g = await guard(req, chatRequest, { route: "chat", limit: 30, maxBytes: 600_000 });
+  if ("response" in g) return g.response;
+  const { messages, context } = g.data as { messages: UIMessage[]; context: unknown };
   const model = resilientModel();
   if (!model) {
     return Response.json({ error: "No AI key configured. Add GROQ_API_KEY (or GOOGLE_GENERATIVE_AI_API_KEY) to .env.local." }, { status: 503 });

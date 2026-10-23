@@ -91,14 +91,14 @@ export default function IdeasPage() {
     <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
       <section className="flex flex-col gap-3 rounded-2xl border bg-gradient-to-br from-primary/5 to-marigold/10 p-4 sm:flex-row sm:items-end">
         <div className="flex-1 space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm font-semibold">
+          <Label htmlFor="idea-wish" className="flex items-center gap-1.5 text-sm font-semibold">
             <Sparkles className="size-4 text-primary" /> Personalised ideas
           </Label>
           <p className="text-xs text-muted-foreground">
             Uses your city, guest mix ({attending.filter((g) => g.dietary !== "non-veg").length} veg · {attending.filter((g) => g.child).length} kids) and budget.{" "}
             {ideas.source === "ai" ? <Badge className="ml-1 h-4 px-1.5 text-[10px]">AI generated</Badge> : <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">Starter pack</Badge>}
           </p>
-          <Input value={wish} onChange={(e) => setWish(e.target.value)} placeholder="Anything specific? e.g. eco-friendly, Chettinad food, games for teenagers" className="bg-card" />
+          <Input id="idea-wish" value={wish} onChange={(e) => setWish(e.target.value)} placeholder="Anything specific? e.g. eco-friendly, Chettinad food, games for teenagers" className="bg-card" />
         </div>
         <Button onClick={generate} disabled={loading} className="gap-1.5">
           {loading ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />} Generate fresh ideas
@@ -209,8 +209,8 @@ export default function IdeasPage() {
         </p>
         <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
           <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">What do you need?</Label>
+            <label className="block space-y-1">
+              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">What do you need?</span>
               <NativeSelect value={kind} onChange={(e) => setKind(e.target.value)}>
                 {WRITE_KINDS.map((k) => (
                   <option key={k.id} value={k.id}>
@@ -218,29 +218,29 @@ export default function IdeasPage() {
                   </option>
                 ))}
               </NativeSelect>
-            </div>
+            </label>
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Tone</Label>
+              <label className="block space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Tone</span>
                 <NativeSelect value={tone} onChange={(e) => setTone(e.target.value)}>
                   {["warm", "formal", "fun", "emotional", "short & sweet"].map((t) => (
                     <option key={t}>{t}</option>
                   ))}
                 </NativeSelect>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Language</Label>
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Language</span>
                 <NativeSelect value={language} onChange={(e) => setLanguage(e.target.value)}>
                   {["English", "Tamil", "Hindi", "Tamil + English", "Hindi + English"].map((t) => (
                     <option key={t}>{t}</option>
                   ))}
                 </NativeSelect>
-              </div>
+              </label>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Details to include</Label>
+            <label className="block space-y-1">
+              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Details to include</span>
               <Textarea value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Names, dress code, parking info, a story about the couple…" className="min-h-24" />
-            </div>
+            </label>
             <Button onClick={write} disabled={writing} className="w-full gap-1.5">
               {writing ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />} Write it
             </Button>

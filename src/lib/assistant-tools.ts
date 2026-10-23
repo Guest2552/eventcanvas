@@ -12,7 +12,7 @@ import { vendorChecklist } from "@/lib/engine/planning";
 import { autoSeat } from "@/lib/engine/seating";
 import { validateLayout } from "@/lib/engine/validation";
 import { inr } from "@/lib/format";
-import { draftLayout, updateEvent, useStore } from "@/lib/store";
+import { updateEvent, useStore } from "@/lib/store";
 import type { BudgetCategory, EventPlan, VendorCategory, VendorStatus } from "@/lib/types";
 
 export function buildPlanContext(ev: EventPlan) {
@@ -159,14 +159,25 @@ export function runAssistantTool(eventId: string, name: string, input: Input): s
       updateEvent(eventId, (d) => {
         for (const k of ["name", "date", "startTime", "city", "theme"] as const) {
           const v = str(input[k]);
-          if (v) (d[k] = v), changed.push(k);
+          if (!v) continue;
+          d[k] = v;
+          changed.push(k);
         }
         const gc = num(input.guestCount);
-        if (gc) (d.guestCount = Math.round(gc)), changed.push("guest count");
+        if (gc) {
+          d.guestCount = Math.round(gc);
+          changed.push("guest count");
+        }
         const bt = num(input.budgetTotal);
-        if (bt) (d.budget.total = Math.round(bt)), changed.push("budget");
+        if (bt) {
+          d.budget.total = Math.round(bt);
+          changed.push("budget");
+        }
         const pp = num(input.perPlate);
-        if (pp) (d.budget.perPlate = Math.round(pp)), changed.push("per-plate cost");
+        if (pp) {
+          d.budget.perPlate = Math.round(pp);
+          changed.push("per-plate cost");
+        }
       });
       return changed.length ? `Updated ${changed.join(", ")}.` : "Nothing to update.";
     }

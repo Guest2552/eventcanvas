@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { seatIndex } from "@/lib/engine/geometry";
@@ -230,24 +229,63 @@ export default function GuestsPage() {
               ))}
             </NativeSelect>
           </div>
-          {selectedGuest && (
-            <div className="border-b bg-primary/5 px-3 py-2 text-xs text-primary">
-              <span className="font-semibold">{selectedGuest.name}</span> selected. Click any seat on the map to {seatOf(selectedGuest) ? "move them (occupied seats swap)" : "seat them"}.
-            </div>
-          )}
-          <ul className="max-h-[50vh] min-h-0 flex-1 divide-y overflow-y-auto scrollbar-thin lg:max-h-none">
+          <div aria-live="polite">
+            {selectedGuest && (
+              <div className="space-y-2 border-b bg-primary/5 px-3 py-2 text-xs text-primary">
+                <p>
+                  <span className="font-semibold">{selectedGuest.name}</span> selected. Click any seat on the map to {seatOf(selectedGuest) ? "move them (occupied seats swap)" : "seat them"}, or pick one here:
+                </p>
+                {/* Keyboard and screen-reader path to the same seat assignment as the canvas */}
+                <NativeSelect value="" onChange={(e) => e.target.value && assignSeat(e.target.value)} aria-label={`Choose a seat for ${selectedGuest.name}`} className="bg-card">
+                  <option value="">Choose a seat…</option>
+                  {layout.elements
+                    .filter((el) => [...seats.values()].some((s) => s.elementId === el.id))
+                    .map((el) => (
+                      <optgroup key={el.id} label={el.label}>
+                        {[...seats.values()]
+                          .filter((s) => s.elementId === el.id)
+                          .map((s) => {
+                            const occupant = bySeat.get(s.id);
+                            return (
+                              <option key={s.id} value={s.id} disabled={occupant?.id === selectedGuest.id}>
+                                {el.label} seat {s.index + 1} {occupant ? (occupant.id === selectedGuest.id ? "(current)" : `(swap with ${occupant.name})`) : "(free)"}
+                              </option>
+                            );
+                          })}
+                      </optgroup>
+                    ))}
+                </NativeSelect>
+              </div>
+            )}
+          </div>
+          <ul className="max-h-[50vh] min-h-0 flex-1 divide-y overflow-y-auto scrollbar-thin lg:max-h-none" aria-label="Guest list">
             {list.map((g) => {
               const seat = seatOf(g);
               return (
-                <li key={g.id} className={cn("group flex cursor-pointer items-center gap-2 px-3 py-2 transition hover:bg-muted/60", selected === g.id && "bg-primary/10")} onClick={() => setSelected(selected === g.id ? null : g.id)}>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {g.name} {g.vip && <span title="VIP">⭐</span>} {g.accessible && <span title="Wheelchair">♿</span>} {g.child && <span title="Child">🧒</span>}
-                    </p>
-                    <p className="truncate text-[11px] text-muted-foreground">
+                <li key={g.id} className={cn("group flex items-center gap-2 px-3 py-2 transition hover:bg-muted/60", selected === g.id && "bg-primary/10")}>
+                  <button type="button" className="min-w-0 flex-1 cursor-pointer rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-pressed={selected === g.id} onClick={() => setSelected(selected === g.id ? null : g.id)}>
+                    <span className="block truncate text-sm font-medium">
+                      {g.name}{" "}
+                      {g.vip && (
+                        <span title="VIP">
+                          ⭐<span className="sr-only">VIP</span>
+                        </span>
+                      )}{" "}
+                      {g.accessible && (
+                        <span title="Wheelchair user">
+                          ♿<span className="sr-only">wheelchair user</span>
+                        </span>
+                      )}{" "}
+                      {g.child && (
+                        <span title="Child">
+                          🧒<span className="sr-only">child</span>
+                        </span>
+                      )}
+                    </span>
+                    <span className="block truncate text-[11px] text-muted-foreground">
                       {g.group || "No group"} · {DIET[g.dietary]}
-                    </p>
-                  </div>
+                    </span>
+                  </button>
                   <NativeSelect
                     value={g.rsvp}
                     onClick={(e) => e.stopPropagation()}
@@ -348,25 +386,25 @@ export default function GuestsPage() {
           </DialogHeader>
           {editing && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-1">
-                <Label className="text-xs">Name</Label>
+              <label className="block col-span-2 space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Name</span>
                 <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} autoFocus />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Group / family</Label>
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Group / family</span>
                 <Input list="guest-groups" value={editing.group} onChange={(e) => setEditing({ ...editing, group: e.target.value })} />
                 <datalist id="guest-groups">
                   {groups.map((g) => (
                     <option key={g} value={g} />
                   ))}
                 </datalist>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Phone</Label>
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Phone</span>
                 <Input value={editing.phone ?? ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Food</Label>
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Food</span>
                 <NativeSelect value={editing.dietary} onChange={(e) => setEditing({ ...editing, dietary: e.target.value as Dietary })}>
                   {Object.entries(DIET).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -374,16 +412,16 @@ export default function GuestsPage() {
                     </option>
                   ))}
                 </NativeSelect>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">RSVP</Label>
+              </label>
+              <label className="block space-y-1">
+                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">RSVP</span>
                 <NativeSelect value={editing.rsvp} onChange={(e) => setEditing({ ...editing, rsvp: e.target.value as Rsvp })}>
                   <option value="pending">Pending</option>
                   <option value="yes">Yes</option>
                   <option value="maybe">Maybe</option>
                   <option value="no">No</option>
                 </NativeSelect>
-              </div>
+              </label>
               <div className="col-span-2 flex flex-wrap gap-4 text-sm">
                 {(["vip", "accessible", "child"] as const).map((k) => (
                   <label key={k} className="flex items-center gap-2">

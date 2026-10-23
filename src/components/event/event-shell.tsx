@@ -165,7 +165,7 @@ export function EventShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+        <main id="main" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">{children}</main>
       </div>
 
       <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} />

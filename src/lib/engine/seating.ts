@@ -98,7 +98,12 @@ export function autoSeat(ev: EventPlan, layout: Layout, rules: SeatingRules = EM
     if (!avoid.has(a)) avoid.set(a, new Set());
     avoid.get(a)!.add(b);
   };
-  for (const g of ev.guests) for (const o of g.avoid ?? []) (addAvoid(g.id, o), addAvoid(o, g.id));
+  for (const g of ev.guests) {
+    for (const o of g.avoid ?? []) {
+      addAvoid(g.id, o);
+      addAvoid(o, g.id);
+    }
+  }
   for (const pair of rules.keepApart) for (const a of pair) for (const b of pair) if (a !== b) addAvoid(a, b);
 
   const uf = new UnionFind();

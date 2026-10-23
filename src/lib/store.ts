@@ -1,16 +1,45 @@
 import { type Draft, produce } from "immer";
 import { del as idbDel, get as idbGet, set as idbSet } from "idb-keyval";
 import { create } from "zustand";
-import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
+import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import type { EventPlan, Layout } from "@/lib/types";
 
 const isBrowser = () => typeof window !== "undefined" && typeof indexedDB !== "undefined";
 
-/** IndexedDB holds far more than localStorage's ~5 MB, which matters once guest lists grow. */
-const idbStorage: StateStorage = {
-  getItem: async (name) => (isBrowser() ? ((await idbGet<string>(name)) ?? null) : null),
-  setItem: async (name, value) => {
-    if (isBrowser()) await idbSet(name, value);
+type Persisted = { events: Record<string, EventPlan> };
+
+/**
+ * IndexedDB holds far more than localStorage's ~5 MB, which matters once guest lists grow.
+ * Writes are batched: a drag or a burst of typing serialises the plan once, not on every change,
+ * and anything pending is flushed when the tab is hidden or closed.
+ */
+export const SAVE_DEBOUNCE_MS = 400;
+let pendingSave: { name: string; value: StorageValue<Persisted> } | null = null;
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+
+export function flushSave() {
+  clearTimeout(saveTimer);
+  if (!pendingSave || !isBrowser()) return;
+  const { name, value } = pendingSave;
+  pendingSave = null;
+  void idbSet(name, JSON.stringify(value));
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", flushSave);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flushSave());
+}
+
+const idbStorage: PersistStorage<Persisted> = {
+  getItem: async (name) => {
+    if (!isBrowser()) return null;
+    const raw = await idbGet<string>(name);
+    return raw ? (JSON.parse(raw) as StorageValue<Persisted>) : null;
+  },
+  setItem: (name, value) => {
+    pendingSave = { name, value };
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
   },
   removeItem: async (name) => {
     if (isBrowser()) await idbDel(name);
@@ -90,8 +119,8 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: "eventcanvas-v1",
-      storage: createJSONStorage(() => idbStorage),
-      partialize: (s) => ({ events: s.events }),
+      storage: idbStorage,
+      partialize: (s): Persisted => ({ events: s.events }),
       skipHydration: true,
       onRehydrateStorage: () => () => useStore.setState({ hydrated: true }),
     },

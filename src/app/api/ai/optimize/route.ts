@@ -1,15 +1,20 @@
 import { generateText, Output } from "ai";
 import { nanoid } from "nanoid";
-import { PLANNER_PERSONA, providerOptions, readJson, retriesFor, withFallback } from "@/lib/ai/provider";
+import { guard } from "@/lib/ai/guard";
+import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { optimizeRequest } from "@/lib/ai/requests";
 import { optimizeSchema } from "@/lib/ai/schemas";
 import type { BudgetSuggestion } from "@/lib/engine/offline";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { event, budget, baseline } = await readJson<{ event: Record<string, unknown>; budget: Record<string, unknown>; baseline: BudgetSuggestion[] }>(req);
+  const g = await guard(req, optimizeRequest, { route: "optimize", limit: 10 });
+  if ("response" in g) return g.response;
+  const { event, budget } = g.data;
+  const baseline = g.data.baseline as BudgetSuggestion[];
 
-  const ai = await withFallback(async (m) => {
+  const ai = await withCachedFallback(cacheKey("optimize", g.data), async (m) => {
     const { output } = await generateText({
       model: m.model,
       providerOptions: providerOptions(m),

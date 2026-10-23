@@ -2,13 +2,13 @@
 
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Circle, Group, Layer, Rect, Shape, Stage, Text, Transformer } from "react-konva";
-import { CATEGORY_STYLE, getDef } from "@/lib/catalog/elements";
-import { localSeats, seatsForElement, type Box } from "@/lib/engine/geometry";
+import { CATEGORY_STYLE, getDef, seatCount } from "@/lib/catalog/elements";
+import { localSeats, type SeatInfo, seatsForElement, type Box } from "@/lib/engine/geometry";
 import type { PlacedElement, Zone } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { type BlueprintCanvasProps, PX } from "./types";
+import { type BlueprintCanvasProps, PX, type SeatVisual } from "./types";
 
 const half = (v: number) => Math.round(v * 2) / 2;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -164,6 +164,27 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
     onElementChange?.(el.id, { w, h, x: half(cx - w / 2), y: half(cy - h / 2), rotation: ((Math.round(n.rotation()) % 360) + 360) % 360 });
   };
 
+  // Items are memoised; they get stable callbacks that always reach the latest handlers,
+  // so editing one table re-renders that table instead of every table and seat.
+  const latest = useRef({ onSelect, onSeatClick, onElementDragEnd, onElementTransformEnd, showTip });
+  useLayoutEffect(() => {
+    latest.current = { onSelect, onSeatClick, onElementDragEnd, onElementTransformEnd, showTip };
+  });
+  const itemApi = useMemo<ItemApi>(
+    () => ({
+      register: (id, n) => {
+        if (n) nodes.current.set(id, n);
+        else nodes.current.delete(id);
+      },
+      select: (id) => latest.current.onSelect?.(id, "element"),
+      dragEnd: (el, e) => latest.current.onElementDragEnd(el)(e),
+      transformEnd: (el, e) => latest.current.onElementTransformEnd(el)(e),
+      seatClick: (s) => latest.current.onSeatClick?.(s),
+      hover: (text) => (text ? latest.current.showTip(text) : setTip(null)),
+    }),
+    [],
+  );
+
   const onZoneTransformEnd = (z: Zone) => (e: KonvaEventObject<Event>) => {
     const n = e.target;
     const w = Math.max(2, half((z.w * PX * n.scaleX()) / PX));
@@ -173,33 +194,43 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
     onZoneChange?.(z.id, { x: half(n.x() / PX), y: half(n.y() / PX), w, h });
   };
 
-  const gridMinor = useCallback(
-    (ctx: Konva.Context, shape: Konva.Shape) => {
+  /** Grid lines every `step` ft; the minor grid skips lines the major grid draws. */
+  const gridDrawer = useCallback(
+    (step: number, skipEvery?: number) => (ctx: Konva.Context, shape: Konva.Shape) => {
+      const draw = (v: number) => !skipEvery || v % skipEvery !== 0;
       ctx.beginPath();
-      for (let x = 5; x < layout.venue.widthFt; x += 5) if (x % 10) (ctx.moveTo(x * PX, 0), ctx.lineTo(x * PX, H));
-      for (let y = 5; y < layout.venue.lengthFt; y += 5) if (y % 10) (ctx.moveTo(0, y * PX), ctx.lineTo(W, y * PX));
+      for (let x = step; x < layout.venue.widthFt; x += step) {
+        if (!draw(x)) continue;
+        ctx.moveTo(x * PX, 0);
+        ctx.lineTo(x * PX, H);
+      }
+      for (let y = step; y < layout.venue.lengthFt; y += step) {
+        if (!draw(y)) continue;
+        ctx.moveTo(0, y * PX);
+        ctx.lineTo(W, y * PX);
+      }
       ctx.strokeShape(shape);
     },
     [layout.venue.widthFt, layout.venue.lengthFt, W, H],
   );
-  const gridMajor = useCallback(
-    (ctx: Konva.Context, shape: Konva.Shape) => {
-      ctx.beginPath();
-      for (let x = 10; x < layout.venue.widthFt; x += 10) (ctx.moveTo(x * PX, 0), ctx.lineTo(x * PX, H));
-      for (let y = 10; y < layout.venue.lengthFt; y += 10) (ctx.moveTo(0, y * PX), ctx.lineTo(W, y * PX));
-      ctx.strokeShape(shape);
-    },
-    [layout.venue.widthFt, layout.venue.lengthFt, W, H],
-  );
+  const gridMinor = useMemo(() => gridDrawer(5, 10), [gridDrawer]);
+  const gridMajor = useMemo(() => gridDrawer(10), [gridDrawer]);
 
   const sorted = useMemo(() => {
     const rank = (el: PlacedElement) => (getDef(el.kind).overlay ? 2 : el.kind === "dance-floor" || el.kind === "kids-zone" ? 0 : 1);
     return [...layout.elements].sort((a, b) => rank(a) - rank(b));
   }, [layout.elements]);
 
+  const tableCount = layout.elements.filter((e) => getDef(e.kind).category === "seating").length;
+  const seatTotal = layout.elements.reduce((n, e) => n + seatCount(e.kind, e.w), 0);
+  const summary = `${layout.venue.name} blueprint, ${layout.venue.widthFt} by ${layout.venue.lengthFt} feet, ${tableCount} tables with ${seatTotal} seats and ${layout.elements.length - tableCount} other items.`;
+
   return (
     <div
       ref={containerRef}
+      role="group"
+      aria-roledescription="venue blueprint"
+      aria-label={summary}
       className={cn("relative h-full w-full overflow-hidden bg-[oklch(0.965_0.008_70)]", zoneDraw && "cursor-crosshair", className)}
       onDragOver={(e) => {
         if (onDropKind) e.preventDefault();
@@ -274,26 +305,25 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
           )}
 
           <Layer>
-            {sorted.map((el) => (
-              <ElementNode
-                key={el.id}
-                el={el}
-                font={font}
-                mode={mode}
-                selected={selectedId === el.id}
-                warn={!!warnIds?.has(el.id)}
-                focus={!!focusIds?.has(el.id)}
-                registerRef={registerNode(el.id)}
-                draggable={editing && !zoneDraw}
-                listening={!zoneDraw}
-                onSelect={() => onSelect?.(el.id, "element")}
-                onDragEnd={onElementDragEnd(el)}
-                onTransformEnd={onElementTransformEnd(el)}
-                seatVisual={seatVisual}
-                onSeatClick={onSeatClick}
-                onSeatHover={(text) => (text ? showTip(text) : setTip(null))}
-              />
-            ))}
+            {sorted.map((el) => {
+              const visuals = seatVisual && getDef(el.kind).category === "seating" ? seatsForElement(el).map(seatVisual) : undefined;
+              return (
+                <ElementNode
+                  key={el.id}
+                  el={el}
+                  font={font}
+                  selected={selectedId === el.id}
+                  warn={!!warnIds?.has(el.id)}
+                  focus={!!focusIds?.has(el.id)}
+                  draggable={editing && !zoneDraw}
+                  listening={!zoneDraw}
+                  seatsClickable={mode === "seats" && !!onSeatClick}
+                  visuals={visuals}
+                  seatKey={visuals ? visuals.map((v) => `${v.fill}${v.stroke}${v.clickable === false ? 0 : 1}${v.tooltip ?? ""}`).join("|") : ""}
+                  api={itemApi}
+                />
+              );
+            })}
             {draft && <Rect x={draft.x * PX} y={draft.y * PX} width={draft.w * PX} height={draft.h * PX} fill="#e11d48" opacity={0.12} stroke="#e11d48" dash={[6, 4]} strokeScaleEnabled={false} />}
             {editing && (
               <Transformer
@@ -313,6 +343,20 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
           </Layer>
         </Stage>
       )}
+      {/* Text alternative for screen readers: the canvas itself is purely visual */}
+      <ul className="sr-only">
+        {layout.zones.map((z) => (
+          <li key={z.id}>Zone: {z.name}</li>
+        ))}
+        {layout.elements.map((el) => {
+          const seats = seatCount(el.kind, el.w);
+          return (
+            <li key={el.id}>
+              {el.label} ({getDef(el.kind).label}){seats ? `, ${seats} seats` : ""}, at {Math.round(el.x)} by {Math.round(el.y)} feet
+            </li>
+          );
+        })}
+      </ul>
       {tip && (
         <div className="pointer-events-none absolute z-10 max-w-60 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-lg" style={{ left: tip.x, top: tip.y - 10 }}>
           {tip.text}
@@ -322,25 +366,44 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
   );
 }
 
+interface ItemApi {
+  register: (id: string, n: Konva.Node | null) => void;
+  select: (id: string) => void;
+  dragEnd: (el: PlacedElement, e: KonvaEventObject<DragEvent>) => void;
+  transformEnd: (el: PlacedElement, e: KonvaEventObject<Event>) => void;
+  seatClick: (s: SeatInfo) => void;
+  hover: (text: string | null) => void;
+}
+
 interface ElementNodeProps {
   el: PlacedElement;
   font: string;
-  mode: BlueprintCanvasProps["mode"];
   selected: boolean;
   warn: boolean;
   focus: boolean;
   draggable: boolean;
   listening: boolean;
-  registerRef: (n: Konva.Node | null) => void;
-  onSelect: () => void;
-  onDragEnd: (e: KonvaEventObject<DragEvent>) => void;
-  onTransformEnd: (e: KonvaEventObject<Event>) => void;
-  seatVisual?: BlueprintCanvasProps["seatVisual"];
-  onSeatClick?: BlueprintCanvasProps["onSeatClick"];
-  onSeatHover: (text: string | null) => void;
+  seatsClickable: boolean;
+  visuals?: SeatVisual[];
+  /** Cheap signature of `visuals`, used by memo to skip unchanged items */
+  seatKey: string;
+  api: ItemApi;
 }
 
-function ElementNode({ el, font, mode, selected, warn, focus, draggable, listening, registerRef, onSelect, onDragEnd, onTransformEnd, seatVisual, onSeatClick, onSeatHover }: ElementNodeProps) {
+const ElementNode = memo(ElementNodeImpl, (a, b) =>
+  a.el === b.el &&
+  a.font === b.font &&
+  a.selected === b.selected &&
+  a.warn === b.warn &&
+  a.focus === b.focus &&
+  a.draggable === b.draggable &&
+  a.listening === b.listening &&
+  a.seatsClickable === b.seatsClickable &&
+  a.seatKey === b.seatKey &&
+  a.api === b.api,
+);
+
+function ElementNodeImpl({ el, font, selected, warn, focus, draggable, listening, seatsClickable, visuals, api }: ElementNodeProps) {
   const def = getDef(el.kind);
   const style = CATEGORY_STYLE[def.category];
   const w = el.w * PX;
@@ -353,11 +416,12 @@ function ElementNode({ el, font, mode, selected, warn, focus, draggable, listeni
   const stroke = warn ? "#dc2626" : focus ? "#e11d48" : selected ? "#e11d48" : el.kind === "exit" ? "#15803d" : el.kind === "entry" ? "#0369a1" : dark ? "#44403c" : style.stroke;
   const strokeWidth = warn || focus || selected ? 3 : 1.5;
   const minSide = Math.min(w, h);
-  const seatsInteractive = mode === "seats" && !!onSeatClick;
+  const seatsInteractive = seatsClickable;
+  const onSelect = () => api.select(el.id);
 
   return (
     <Group
-      ref={registerRef}
+      ref={(n) => api.register(el.id, n)}
       x={(el.x + el.w / 2) * PX}
       y={(el.y + el.h / 2) * PX}
       offsetX={w / 2}
@@ -368,8 +432,8 @@ function ElementNode({ el, font, mode, selected, warn, focus, draggable, listeni
       onClick={onSelect}
       onTap={onSelect}
       onDragStart={onSelect}
-      onDragEnd={onDragEnd}
-      onTransformEnd={onTransformEnd}
+      onDragEnd={(e) => api.dragEnd(el, e)}
+      onTransformEnd={(e) => api.transformEnd(el, e)}
       onMouseEnter={(e) => {
         const c = e.target.getStage()?.container();
         if (c && draggable) c.style.cursor = "move";
@@ -428,7 +492,7 @@ function ElementNode({ el, font, mode, selected, warn, focus, draggable, listeni
 
       {seats.map((s, i) => {
         const p = local[i];
-        const v = seatVisual?.(s);
+        const v = visuals?.[i];
         return (
           <Circle
             key={s.id}
@@ -438,24 +502,25 @@ function ElementNode({ el, font, mode, selected, warn, focus, draggable, listeni
             fill={v?.fill ?? "#f5f5f4"}
             stroke={v?.stroke ?? "#a8a29e"}
             strokeWidth={1}
+            perfectDrawEnabled={false}
             listening={seatsInteractive}
             onClick={(e) => {
               e.cancelBubble = true;
-              if (v?.clickable !== false) onSeatClick?.(s);
+              if (v?.clickable !== false) api.seatClick(s);
             }}
             onTap={(e) => {
               e.cancelBubble = true;
-              if (v?.clickable !== false) onSeatClick?.(s);
+              if (v?.clickable !== false) api.seatClick(s);
             }}
             onMouseEnter={(e) => {
               const c = e.target.getStage()?.container();
               if (c && v?.clickable !== false) c.style.cursor = "pointer";
-              onSeatHover(v?.tooltip ?? s.label);
+              api.hover(v?.tooltip ?? s.label);
             }}
             onMouseLeave={(e) => {
               const c = e.target.getStage()?.container();
               if (c) c.style.cursor = "";
-              onSeatHover(null);
+              api.hover(null);
             }}
           />
         );

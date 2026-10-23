@@ -1,17 +1,21 @@
 import { generateText, Output } from "ai";
 import { parsePrompt } from "@/lib/engine/offline";
-import { PLANNER_PERSONA, providerOptions, readJson, retriesFor, withFallback } from "@/lib/ai/provider";
+import { guard } from "@/lib/ai/guard";
+import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { planRequest } from "@/lib/ai/requests";
 import { planSchema } from "@/lib/ai/schemas";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { prompt, today } = await readJson<{ prompt: string; today?: string }>(req);
+  const g = await guard(req, planRequest, { route: "plan", limit: 10 });
+  if ("response" in g) return g.response;
+  const { prompt, today } = g.data;
   const brief = String(prompt ?? "").slice(0, 2000);
   const todayIso = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
   const fallback = parsePrompt(brief, new Date(`${todayIso}T12:00:00`));
 
-  const ai = await withFallback(async (m) => {
+  const ai = await withCachedFallback(cacheKey("plan", g.data), async (m) => {
     const { output } = await generateText({
       model: m.model,
       providerOptions: providerOptions(m),

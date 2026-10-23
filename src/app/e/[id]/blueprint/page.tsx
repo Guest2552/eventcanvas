@@ -272,6 +272,7 @@ export default function BlueprintPage() {
               validation={validation}
               checklist={checklist}
               onIssueClick={focusIssue}
+              onSelectItem={setSelected}
               onRename={(name) => update((d) => void (draftLayout(d).name = name), { coalesce: `rename-${layout.id}` })}
               onVenueChange={(patch, field) => update((d) => void Object.assign(draftLayout(d).venue, patch), { coalesce: `venue-${field}` })}
             />

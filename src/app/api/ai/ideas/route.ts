@@ -1,13 +1,17 @@
 import { generateText, Output } from "ai";
-import { PLANNER_PERSONA, providerOptions, readJson, retriesFor, withFallback } from "@/lib/ai/provider";
+import { guard } from "@/lib/ai/guard";
+import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { ideasRequest } from "@/lib/ai/requests";
 import { ideasSchema } from "@/lib/ai/schemas";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const body = await readJson<{ event: Record<string, unknown>; diet: Record<string, number>; kids: number; budgetPerHead: number; wish?: string }>(req);
+  const g = await guard(req, ideasRequest, { route: "ideas", limit: 10 });
+  if ("response" in g) return g.response;
+  const body = g.data;
 
-  const ai = await withFallback(async (m) => {
+  const ai = await withCachedFallback(cacheKey("ideas", g.data), async (m) => {
     const { output } = await generateText({
       model: m.model,
       providerOptions: providerOptions(m),

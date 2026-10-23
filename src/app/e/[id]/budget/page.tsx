@@ -3,7 +3,8 @@
 import { BellRing, ChevronDown, Link2, Loader2, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import dynamic from "next/dynamic";
+
 import { toast } from "sonner";
 import { useCurrentEvent } from "@/components/event/use-current-event";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,10 @@ import { type BudgetSuggestion, offlineOptimize } from "@/lib/engine/offline";
 import { formatDate, inr, inrShort } from "@/lib/format";
 import type { BudgetCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const chartFallback = () => <div className="h-64 animate-pulse rounded-xl bg-muted/50" />;
+const PlannedVsCommittedChart = dynamic(() => import("@/components/event/budget-charts").then((m) => m.PlannedVsCommittedChart), { ssr: false, loading: chartFallback });
+const SpendDonut = dynamic(() => import("@/components/event/budget-charts").then((m) => m.SpendDonut), { ssr: false, loading: chartFallback });
 
 export default function BudgetPage() {
   const { ev, update } = useCurrentEvent();
@@ -103,23 +108,7 @@ export default function BudgetPage() {
               <Wand2 className="size-3.5" /> Smart split
             </Button>
           </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 16 }}>
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#eee6dd" />
-                <XAxis type="number" tickFormatter={(v) => inrShort(v)} fontSize={11} stroke="#a8a29e" />
-                <YAxis type="category" dataKey="name" width={130} fontSize={11} stroke="#78716c" />
-                <Tooltip formatter={(v) => inr(Number(v))} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Planned" fill="#e7e5e4" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="Committed" radius={[0, 4, 4, 0]}>
-                  {chartData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <PlannedVsCommittedChart data={chartData} />
         </div>
 
         <div className="space-y-4">
@@ -309,19 +298,7 @@ export default function BudgetPage() {
       {cats.length > 0 && (
         <section className="rounded-2xl border bg-card p-4">
           <p className="mb-2 text-sm font-semibold">Where the money goes</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={cats.filter((c) => c.committed > 0)} dataKey="committed" nameKey="label" innerRadius={60} outerRadius={95} paddingAngle={2}>
-                  {cats.filter((c) => c.committed > 0).map((c) => (
-                    <Cell key={c.category} fill={c.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => inr(Number(v))} />
-                <Legend wrapperStyle={{ fontSize: 11 }} layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <SpendDonut data={cats} />
         </section>
       )}
     </div>

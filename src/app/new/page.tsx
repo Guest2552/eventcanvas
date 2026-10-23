@@ -94,7 +94,7 @@ function NewEvent() {
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
         <Brand />
       </header>
-      <main className="mx-auto max-w-5xl space-y-6 px-4 pb-16 sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto max-w-5xl space-y-6 px-4 pb-16 sm:px-6">
         <div>
           <h1 className="text-3xl font-semibold sm:text-4xl">Start a new celebration</h1>
           <p className="mt-1 text-muted-foreground">Describe it in one line and let AI draft the plan, or fill the details yourself.</p>
@@ -214,9 +214,9 @@ function NewEvent() {
 
 function Field({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <label className={cn("block space-y-1.5", className)}>
+      <span className="block text-xs font-medium text-muted-foreground">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }

@@ -93,6 +93,7 @@ export function AssistantPanel({ open, onOpenChange }: { open: boolean; onOpenCh
         )}
         aria-label="AI co-planner"
         aria-hidden={!open}
+        inert={!open}
       >
         <div className="flex items-center gap-2 border-b px-4 py-3">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -112,7 +113,7 @@ export function AssistantPanel({ open, onOpenChange }: { open: boolean; onOpenCh
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 scrollbar-thin">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 scrollbar-thin" role="log" aria-live="polite" aria-label="Conversation with the AI co-planner">
           {messages.length === 0 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Ask me to change the plan in plain words. I can see your whole event: layout, guests, budget, vendors and schedule.</p>

@@ -10,7 +10,6 @@ import { StatTile } from "@/components/event/score-ring";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { seatIndex } from "@/lib/engine/geometry";
 import { inr } from "@/lib/format";
@@ -51,22 +50,22 @@ export default function SharePage() {
             <Switch checked={ev.booking.enabled} onCheckedChange={(enabled) => setB({ enabled }, "enabled")} aria-label="Enable public booking" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1 sm:col-span-2">
-              <Label className="text-xs">Page title</Label>
+            <label className="block space-y-1 sm:col-span-2">
+              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Page title</span>
               <Input value={ev.booking.title} onChange={(e) => setB({ title: e.target.value }, "title")} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">General pass (₹)</Label>
+            </label>
+            <label className="block space-y-1">
+              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">General pass (₹)</span>
               <Input type="number" min={0} value={ev.booking.priceGeneral} onChange={(e) => setB({ priceGeneral: Number(e.target.value) }, "pg")} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">VIP pass (₹)</Label>
+            </label>
+            <label className="block space-y-1">
+              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">VIP pass (₹)</span>
               <Input type="number" min={0} value={ev.booking.priceVip} onChange={(e) => setB({ priceVip: Number(e.target.value) }, "pv")} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Max seats per booking</Label>
+            </label>
+            <label className="block space-y-1">
+              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Max seats per booking</span>
               <Input type="number" min={1} max={20} value={ev.booking.maxPerOrder} onChange={(e) => setB({ maxPerOrder: Math.max(1, Number(e.target.value)) }, "max")} />
-            </div>
+            </label>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/50 p-3">
             <code className="min-w-0 flex-1 truncate text-xs">{bookUrl}</code>

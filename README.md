@@ -81,6 +81,16 @@ Plans are stored in the browser (**IndexedDB**) and synced live between tabs wit
 6. Home → **🪔 Diwali community night** → **Share & booking** → open the booking page in a new tab, book seats, see them appear in the host tab
 7. **Live mode**: drag the event clock; **Export PDF**
 
+## Engineering quality
+
+| Area | What's in place |
+|---|---|
+| **Testing** | 60 Vitest tests in 9 suites: layout/seating/budget engine, safety rules, API routes (validation, rate limits, offline fallbacks), request guard and AI cache, store undo/redo, every co-planner tool, and React components in jsdom. `npm run test:coverage` prints coverage; CI runs it on every push. |
+| **Security** | Every AI route goes through `src/lib/ai/guard.ts`: same-origin check, per-IP rate limit, body-size cap, and zod schema validation (`src/lib/ai/requests.ts`). API keys live only in `server-only` modules. Prompts fence user text and tell the model to treat it as data. CSP, `X-Frame-Options`, `nosniff`, Referrer and Permissions policies in `next.config.ts`. Model output is rendered as text, never HTML. Production dependencies audit clean. |
+| **Accessibility** | Skip link and landmarks; every form label wraps its control; seat assignment and seat booking both have keyboard/screen-reader paths alongside the canvas; the canvas exposes a text summary and item list; Studio items are selectable from a list and nudgeable with arrow keys; keyboard drag-and-drop on the vendor board; the closed co-planner panel is `inert`, its log is a live region; honours `prefers-reduced-motion`. |
+| **Efficiency** | Canvas items are memoised (editing one table redraws one table); Konva and Recharts load on demand; IndexedDB writes are debounced; validation/budget work is memoised per change; identical AI requests are cached for 10 minutes; chat context is compacted for Groq's 8k tokens/min free tier. |
+| **Code quality** | Strict TypeScript, ESLint with zero warnings, pure engine functions separated from UI, shared actions used by both the UI and the AI tools, CI workflow (`.github/workflows/ci.yml`) running lint, type-check, tests, audit and build. |
+
 ## Tech
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · shadcn/ui (Base UI) · react-konva · Zustand + immer · AI SDK 7 (`@ai-sdk/groq`, `@ai-sdk/google`) · Recharts · dnd-kit · Vitest

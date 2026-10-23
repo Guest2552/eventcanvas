@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { ScoreRing, StatTile } from "@/components/event/score-ring";
@@ -21,10 +20,10 @@ import { cn } from "@/lib/utils";
 
 function NumField({ label, value, onChange, step = 0.5, min }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number }) {
   return (
-    <div className="space-y-1">
-      <Label className="text-[11px] text-muted-foreground">{label}</Label>
+    <label className="block space-y-1">
+      <span className="flex items-center gap-2 text-sm leading-none font-medium text-[11px] text-muted-foreground">{label}</span>
       <Input type="number" step={step} min={min} value={Number.isFinite(value) ? value : 0} onChange={(e) => onChange(Number(e.target.value))} className="h-7 text-sm" />
-    </div>
+    </label>
   );
 }
 
@@ -121,12 +120,12 @@ export function ZoneInspector({ zone, onChange, onDelete }: { zone: Zone; onChan
   return (
     <div className="space-y-4 p-4">
       <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Zone</p>
-      <div className="space-y-1">
-        <Label className="text-[11px] text-muted-foreground">Name</Label>
+      <label className="block space-y-1">
+        <span className="flex items-center gap-2 text-sm leading-none font-medium text-[11px] text-muted-foreground">Name</span>
         <Input value={zone.name} onChange={(e) => onChange({ name: e.target.value }, "name")} className="h-8" />
-      </div>
-      <div className="space-y-1">
-        <Label className="text-[11px] text-muted-foreground">Type</Label>
+      </label>
+      <label className="block space-y-1">
+        <span className="flex items-center gap-2 text-sm leading-none font-medium text-[11px] text-muted-foreground">Type</span>
         <NativeSelect value={zone.kind} onChange={(e) => onChange({ kind: e.target.value as ZoneKind, color: ZONE_KINDS[e.target.value as ZoneKind].color }, "kind")}>
           {(Object.keys(ZONE_KINDS) as ZoneKind[]).map((k) => (
             <option key={k} value={k}>
@@ -135,7 +134,7 @@ export function ZoneInspector({ zone, onChange, onDelete }: { zone: Zone; onChan
           ))}
         </NativeSelect>
         <p className="text-[11px] text-muted-foreground">VIP zones get priority in auto-seating and VIP pricing in seat booking.</p>
-      </div>
+      </label>
       <div className="grid grid-cols-2 gap-2">
         <NumField label="Width (ft)" value={zone.w} min={2} onChange={(w) => onChange({ w }, "w")} />
         <NumField label="Depth (ft)" value={zone.h} min={2} onChange={(h) => onChange({ h }, "h")} />
@@ -159,6 +158,7 @@ export function LayoutOverview({
   validation,
   checklist,
   onIssueClick,
+  onSelectItem,
   onRename,
   onVenueChange,
 }: {
@@ -167,6 +167,7 @@ export function LayoutOverview({
   validation: ValidationResult;
   checklist: ChecklistItem[];
   onIssueClick: (issue: Issue) => void;
+  onSelectItem: (id: string) => void;
   onRename: (name: string) => void;
   onVenueChange: (patch: Partial<Venue>, field: string) => void;
 }) {
@@ -175,10 +176,10 @@ export function LayoutOverview({
   const fromLayout = checklist.filter((c) => c.status === "missing" && c.reasons.some((r) => r.startsWith("You placed")));
   return (
     <div className="space-y-4 p-4">
-      <div className="space-y-1">
-        <Label className="text-[11px] text-muted-foreground">Version name</Label>
+      <label className="block space-y-1">
+        <span className="flex items-center gap-2 text-sm leading-none font-medium text-[11px] text-muted-foreground">Version name</span>
         <Input value={layout.name} onChange={(e) => onRename(e.target.value)} className="h-8 font-medium" />
-      </div>
+      </label>
 
       <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
         <ScoreRing value={validation.score} size={60} label="safety" />
@@ -225,7 +226,7 @@ export function LayoutOverview({
           <ul className="mt-1 space-y-0.5 text-muted-foreground">
             {fromLayout.map((c) => (
               <li key={c.category}>
-                {c.emoji} {c.label}: {c.reasons.find((r) => r.startsWith("You placed"))?.toLowerCase().replace("you placed", "for the")}
+                {c.emoji} {c.label}: {c.reasons.find((r) => r.startsWith("You placed"))?.replace(/^You placed an? /, "for the ")}
               </li>
             ))}
           </ul>
@@ -234,6 +235,20 @@ export function LayoutOverview({
           </Link>
         </div>
       )}
+
+      {/* Keyboard path into the canvas: pick an item here, then edit it in the inspector or nudge it with arrow keys */}
+      <details className="rounded-lg border p-3">
+        <summary className="cursor-pointer text-xs font-semibold">Items on the blueprint ({layout.elements.length})</summary>
+        <ul className="mt-2 grid max-h-56 grid-cols-2 gap-1 overflow-y-auto scrollbar-thin" aria-label="Blueprint items">
+          {layout.elements.map((el) => (
+            <li key={el.id}>
+              <button type="button" onClick={() => onSelectItem(el.id)} className="w-full truncate rounded-md border px-2 py-1 text-left text-xs transition hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+                {getDef(el.kind).emoji} {el.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       <div className="space-y-2 rounded-lg border p-3">
         <p className="text-xs font-semibold">Venue</p>
