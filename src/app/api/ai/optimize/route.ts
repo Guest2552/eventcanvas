@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { nanoid } from "nanoid";
 import { guard } from "@/lib/ai/guard";
-import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { plannerInstructions, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
 import { optimizeRequest } from "@/lib/ai/requests";
 import { optimizeSchema } from "@/lib/ai/schemas";
 import type { BudgetSuggestion } from "@/lib/engine/offline";
@@ -19,8 +19,16 @@ export async function POST(req: Request) {
       model: m.model,
       providerOptions: providerOptions(m),
       maxRetries: retriesFor(),
-      instructions: `${PLANNER_PERSONA}\nYou are reviewing a budget to find savings that keep the celebration special. Keep baseline suggestions that make sense (reference their id so one-click actions keep working), improve their wording for this event, and add new culturally aware ideas. Savings must be realistic.`,
-      prompt: `Event: ${JSON.stringify(event)}\nBudget: ${JSON.stringify(budget)}\nBaseline suggestions: ${JSON.stringify(baseline.map(({ action, ...s }) => ({ ...s, actionable: !!action })))}`,
+      instructions: plannerInstructions(
+        "You are reviewing a budget to find savings that keep the celebration special.",
+        "Keep baseline suggestions that make sense (reference their id so one-click actions keep working).",
+        "Improve their wording for this event, and add new culturally aware ideas. Savings must be realistic.",
+      ),
+      prompt: [
+        `Event: ${JSON.stringify(event)}`,
+        `Budget: ${JSON.stringify(budget)}`,
+        `Baseline suggestions: ${JSON.stringify(baseline.map(({ action, ...s }) => ({ ...s, actionable: !!action })))}`,
+      ].join("\n"),
       output: Output.object({ schema: optimizeSchema }),
     });
     return output;

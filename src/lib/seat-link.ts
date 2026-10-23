@@ -30,7 +30,11 @@ export function buildSeatLink(origin: string, ev: EventPlan, layout: Layout, gue
     c: ev.city,
     tl: el.label,
     s: Number(idx) + 1,
-    l: { w: layout.venue.widthFt, h: layout.venue.lengthFt, els: layout.elements.map((e) => [e.kind, e.x, e.y, e.w, e.h, e.rotation, e.label]) },
+    l: {
+      w: layout.venue.widthFt,
+      h: layout.venue.lengthFt,
+      els: layout.elements.map((e) => [e.kind, e.x, e.y, e.w, e.h, e.rotation, e.label]),
+    },
     hl: elIndex,
   };
   // The hash fragment never reaches the server

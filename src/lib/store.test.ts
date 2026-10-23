@@ -3,7 +3,19 @@ import { createEventPlan } from "@/lib/engine/factory";
 import { activeLayoutOf, draftLayout, updateEvent, useStore } from "./store";
 
 const make = () =>
-  createEventPlan({ name: "Store test", type: "birthday", date: "2026-12-01", startTime: "17:00", city: "Chennai", guestCount: 40, budgetTotal: 150000, theme: "" }, new Date("2026-10-23T10:00:00"));
+  createEventPlan(
+    {
+      name: "Store test",
+      type: "birthday",
+      date: "2026-12-01",
+      startTime: "17:00",
+      city: "Chennai",
+      guestCount: 40,
+      budgetTotal: 150000,
+      theme: "",
+    },
+    new Date("2026-10-23T10:00:00"),
+  );
 
 beforeEach(() => useStore.setState({ events: {}, history: {} }));
 

@@ -25,7 +25,9 @@ describe("AI co-planner tools", () => {
   it("moves, swaps and removes items", () => {
     expect(runAssistantTool(id, "move_item", { target: "dj-booth", awayFrom: "VIP tables" })).toMatch(/Moved DJ booth \d+ ft away/);
     const reg = kinds("registration")[0];
-    expect(runAssistantTool(id, "swap_items", { first: "Registration desk", second: "Gift table" })).toMatch(/Swapped Registration desk and Gift table/);
+    expect(runAssistantTool(id, "swap_items", { first: "Registration desk", second: "Gift table" })).toMatch(
+      /Swapped Registration desk and Gift table/,
+    );
     expect(kinds("registration")[0].x).not.toBe(reg.x);
     expect(runAssistantTool(id, "remove_items", { target: "plant" })).toMatch(/Removed 2/);
     expect(runAssistantTool(id, "remove_items", { target: "submarine" })).toMatch(/Nothing matching/);
@@ -56,8 +58,18 @@ describe("AI co-planner tools", () => {
   it("re-seats everyone and regenerates layouts as new versions", () => {
     expect(runAssistantTool(id, "auto_seat", {})).toMatch(/^Seated \d+ of \d+ guests/);
     const before = ev().layouts.length;
-    expect(runAssistantTool(id, "auto_layout", { tableKind: "round-8", asNewVersion: true })).toMatch(/Generated a layout with \d+ seats as a new version/);
+    expect(runAssistantTool(id, "auto_layout", { tableKind: "round-8", asNewVersion: true })).toMatch(
+      /Generated a layout with \d+ seats as a new version/,
+    );
     expect(ev().layouts).toHaveLength(before + 1);
+  });
+
+  it("rejects malformed tool input without touching the plan", () => {
+    const before = ev();
+    expect(runAssistantTool(id, "add_items", { kind: "chair", count: "lots" })).toMatch(/^Invalid input for add_items/);
+    expect(runAssistantTool(id, "set_allocation", { category: "decor" })).toMatch(/^Invalid input for set_allocation/);
+    expect(runAssistantTool(id, "move_item", null)).toMatch(/^Invalid input for move_item/);
+    expect(ev()).toBe(before);
   });
 
   it("builds a compact plan snapshot for the model", () => {

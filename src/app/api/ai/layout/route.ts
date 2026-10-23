@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { defaultIntent } from "@/lib/engine/layout";
 import { guard } from "@/lib/ai/guard";
-import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { plannerInstructions, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
 import { layoutRequest } from "@/lib/ai/requests";
 import { layoutIntentSchema } from "@/lib/ai/schemas";
 
@@ -19,7 +19,11 @@ export async function POST(req: Request) {
       model: m.model,
       providerOptions: providerOptions(m),
       maxRetries: retriesFor(),
-      instructions: `${PLANNER_PERSONA}\nYou choose WHAT goes into a venue floor plan. A layout engine will place items with safe aisles, so do not give coordinates. Prefer fewer, meaningful items over clutter; small venues cannot fit everything.`,
+      instructions: plannerInstructions(
+        "You choose WHAT goes into a venue floor plan.",
+        "A layout engine will place items with safe aisles, so do not give coordinates.",
+        "Prefer fewer, meaningful items over clutter; small venues cannot fit everything.",
+      ),
       prompt: [
         `Event: ${event.type}, ${event.guestCount} guests, theme "${event.theme ?? ""}", city ${event.city ?? ""}. ${event.notes ?? ""}`,
         `Venue: ${venue.name}, ${venue.widthFt} x ${venue.lengthFt} ft (${venue.widthFt * venue.lengthFt} sq ft), ${venue.indoor ? "indoor" : "outdoor"}.`,

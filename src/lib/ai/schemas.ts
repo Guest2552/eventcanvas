@@ -1,25 +1,77 @@
 import { z } from "zod";
-import { TABLE_KINDS } from "@/lib/catalog/elements";
+import { FIXTURE_KINDS, TABLE_KINDS } from "@/lib/catalog/elements";
 
 export const EVENT_TYPE_IDS = ["wedding", "birthday", "community", "corporate"] as const;
 export const TEMPLATE_IDS = ["banquet", "lawn", "community-hall", "auditorium", "terrace", "home"] as const;
 export const OPTIONAL_KINDS = [
-  "stage", "mandap", "dance-floor", "dj-booth", "led-screen", "speaker", "buffet", "bar", "cake-table", "photo-booth",
-  "kids-zone", "gift-table", "registration", "ramp", "generator", "plant", "sofa",
+  "stage",
+  "mandap",
+  "dance-floor",
+  "dj-booth",
+  "led-screen",
+  "speaker",
+  "buffet",
+  "bar",
+  "cake-table",
+  "photo-booth",
+  "kids-zone",
+  "gift-table",
+  "registration",
+  "ramp",
+  "generator",
+  "plant",
+  "sofa",
 ] as const;
-export const ALL_KINDS = [...OPTIONAL_KINDS, ...TABLE_KINDS, "entry", "exit", "restroom", "kitchen", "pillar", "wall"] as const;
-export const BUDGET_IDS = ["venue", "catering", "decor", "rentals", "photography", "entertainment", "attire", "invitations", "gifts", "logistics", "misc"] as const;
+export const ALL_KINDS = [...OPTIONAL_KINDS, ...TABLE_KINDS, ...FIXTURE_KINDS] as const;
+export const BUDGET_IDS = [
+  "venue",
+  "catering",
+  "decor",
+  "rentals",
+  "photography",
+  "entertainment",
+  "attire",
+  "invitations",
+  "gifts",
+  "logistics",
+  "misc",
+] as const;
 export const VENDOR_IDS = [
-  "venue", "catering", "decor", "photography", "dj", "av", "bakery", "florist", "mehendi", "makeup", "priest", "invitations",
-  "transport", "rentals", "entertainment", "power", "security", "attire", "emcee",
+  "venue",
+  "catering",
+  "decor",
+  "photography",
+  "dj",
+  "av",
+  "bakery",
+  "florist",
+  "mehendi",
+  "makeup",
+  "priest",
+  "invitations",
+  "transport",
+  "rentals",
+  "entertainment",
+  "power",
+  "security",
+  "attire",
+  "emcee",
 ] as const;
 
-const split = z.object(Object.fromEntries(BUDGET_IDS.map((k) => [k, z.number().describe(`Percent of total budget for ${k}`)])) as Record<(typeof BUDGET_IDS)[number], z.ZodNumber>);
+const split = z.object(
+  Object.fromEntries(BUDGET_IDS.map((k) => [k, z.number().describe(`Percent of total budget for ${k}`)])) as Record<
+    (typeof BUDGET_IDS)[number],
+    z.ZodNumber
+  >,
+);
 
 export const planSchema = z.object({
   name: z
     .string()
-    .describe("Short event name. Use people's names ONLY if the brief contains them (e.g. \"Kabir's 5th Birthday\"); otherwise a descriptive name like \"Wedding Reception in Coimbatore\". Never invent names."),
+    .describe(
+      "Short event name. Use people's names ONLY if the brief contains them (e.g. \"Kabir's 5th Birthday\"); " +
+        'otherwise a descriptive name like "Wedding Reception in Coimbatore". Never invent names.',
+    ),
   type: z.enum(EVENT_TYPE_IDS),
   date: z.string().describe("YYYY-MM-DD. If no date is given, pick a sensible date 8 weeks from today"),
   startTime: z.string().describe("HH:mm, 24-hour"),
@@ -27,11 +79,19 @@ export const planSchema = z.object({
   guestCount: z.number().describe("Expected number of guests"),
   budgetTotal: z.number().describe("Total budget in INR. Estimate realistically if not given"),
   theme: z.string().describe("A short evocative theme name, e.g. 'Marigold & Ivory'"),
-  templateId: z.enum(TEMPLATE_IDS).describe("home ≤30 guests, terrace ≤70, community-hall ≤160, banquet ≤260 indoor, lawn for outdoor or large, auditorium for shows/talks"),
+  templateId: z
+    .enum(TEMPLATE_IDS)
+    .describe(
+      "home ≤30 guests, terrace ≤70, community-hall ≤160, banquet ≤260 indoor, lawn for outdoor or large, auditorium for shows/talks",
+    ),
   tableKind: z.enum(TABLE_KINDS).describe("Seating style. chair-row for audience-style shows"),
   include: z.array(z.enum(OPTIONAL_KINDS)).describe("Blueprint items that suit this event"),
   split: split.describe("Budget split in percent; values sum to 100"),
-  perPlate: z.number().describe("Realistic catering cost per plate in INR for the city, consistent with the catering share of the budget (roughly ₹400–1500; metros cost more)"),
+  perPlate: z
+    .number()
+    .describe(
+      "Realistic catering cost per plate in INR for the city, consistent with the catering share of the budget (roughly ₹400–1500; metros cost more)",
+    ),
   highlights: z.array(z.string()).describe("Exactly 4 short, personalised planning ideas or tips for this event"),
 });
 
@@ -60,8 +120,12 @@ export const ideasSchema = z.object({
       }),
     )
     .describe("3 theme options"),
-  activities: z.array(z.object({ title: z.string(), description: z.string(), audience: z.string() })).describe("5 activities or games suited to the guests"),
-  menu: z.array(z.object({ course: z.string(), items: z.array(z.string()) })).describe("4 to 5 courses respecting the dietary mix and regional cuisine"),
+  activities: z
+    .array(z.object({ title: z.string(), description: z.string(), audience: z.string() }))
+    .describe("5 activities or games suited to the guests"),
+  menu: z
+    .array(z.object({ course: z.string(), items: z.array(z.string()) }))
+    .describe("4 to 5 courses respecting the dietary mix and regional cuisine"),
   favors: z.array(z.string()).describe("5 return-gift or favour ideas within budget"),
   hashtags: z.array(z.string()).describe("4 fun event hashtags"),
 });

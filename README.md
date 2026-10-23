@@ -6,18 +6,18 @@
 
 Plan weddings, birthdays and community events the way BookMyShow shows a theatre: as a **seat map**. You lay out the venue on a real-scale blueprint, and everything else is wired to it. Place 10 tables and the budget updates. Put a DJ booth down and "DJ" appears on your vendor checklist. Seat a guest and they get a "find my seat" link. An **AI co-planner (Groq, with Gemini as fallback)** can edit the plan for you in plain words.
 
-| Challenge requirement | Where it lives |
-|---|---|
-| Budgets | Linked budget: blueprint rentals + guest-driven catering + vendor quotes, payment reminders, AI optimizer with one-click apply |
-| Timelines | Planning countdown (auto-compressed to your date) + minute-by-minute run of show tied to blueprint spots and vendors |
-| Vendor checklists | Auto checklist from event type **and** placed items, drag-and-drop status board, zone assignment, AI enquiry drafts |
-| Personalized ideas | Themes with palettes, games, regional menus by dietary mix, favours, hashtags, plus a writer for invites, speeches and WhatsApp reminders (English/Tamil/Hindi) |
+| Challenge requirement | Where it lives                                                                                                                                                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Budgets               | Linked budget: blueprint rentals + guest-driven catering + vendor quotes, payment reminders, AI optimizer with one-click apply                                  |
+| Timelines             | Planning countdown (auto-compressed to your date) + minute-by-minute run of show tied to blueprint spots and vendors                                            |
+| Vendor checklists     | Auto checklist from event type **and** placed items, drag-and-drop status board, zone assignment, AI enquiry drafts                                             |
+| Personalized ideas    | Themes with palettes, games, regional menus by dietary mix, favours, hashtags, plus a writer for invites, speeches and WhatsApp reminders (English/Tamil/Hindi) |
 
 ## Features
 
 - **One-prompt plan**: describe the event in one line; AI drafts the type, date, city, budget split, venue and blueprint
 - **Blueprint Studio**: drag-and-drop canvas (Konva) with 28 items, real feet, zones, rotate/resize, undo/redo, keyboard shortcuts
-- **AI auto-layout**: the AI picks *what* goes in the room; a deterministic engine places it with 3 ft aisles, exit clearance and capacity rules (it never invents coordinates)
+- **AI auto-layout**: the AI picks _what_ goes in the room; a deterministic engine places it with 3 ft aisles, exit clearance and capacity rules (it never invents coordinates)
 - **Live safety checks**: overlaps, tight aisles, exit count and blockage, crowding, accessibility, scored 0–100
 - **Layout versions**: Plan A vs Plan B (e.g. rain backup), compared side by side
 - **Seat-level guest map**: click a guest, click a seat (occupied seats swap); CSV import
@@ -46,7 +46,8 @@ Browser ──► /api/ai/*  ──► Groq  openai/gpt-oss-120b   (primary)
 npm install
 cp .env.example .env.local   # then paste your GROQ_API_KEY (free: https://console.groq.com/keys)
 npm run dev                  # http://localhost:3000
-npm test                     # engine unit tests (layout, seating, budget, safety, links)
+npm test                     # 76 Vitest tests (engine, API routes, AI tools, components)
+npm run format               # Prettier (CI runs format:check)
 ```
 
 No key? Everything still works with the built-in generators; only the chat co-planner needs a key.
@@ -83,13 +84,13 @@ Plans are stored in the browser (**IndexedDB**) and synced live between tabs wit
 
 ## Engineering quality
 
-| Area | What's in place |
-|---|---|
-| **Testing** | 60 Vitest tests in 9 suites: layout/seating/budget engine, safety rules, API routes (validation, rate limits, offline fallbacks), request guard and AI cache, store undo/redo, every co-planner tool, and React components in jsdom. `npm run test:coverage` prints coverage; CI runs it on every push. |
-| **Security** | Every AI route goes through `src/lib/ai/guard.ts`: same-origin check, per-IP rate limit, body-size cap, and zod schema validation (`src/lib/ai/requests.ts`). API keys live only in `server-only` modules. Prompts fence user text and tell the model to treat it as data. CSP, `X-Frame-Options`, `nosniff`, Referrer and Permissions policies in `next.config.ts`. Model output is rendered as text, never HTML. Production dependencies audit clean. |
-| **Accessibility** | Skip link and landmarks; every form label wraps its control; seat assignment and seat booking both have keyboard/screen-reader paths alongside the canvas; the canvas exposes a text summary and item list; Studio items are selectable from a list and nudgeable with arrow keys; keyboard drag-and-drop on the vendor board; the closed co-planner panel is `inert`, its log is a live region; honours `prefers-reduced-motion`. |
-| **Efficiency** | Canvas items are memoised (editing one table redraws one table); Konva and Recharts load on demand; IndexedDB writes are debounced; validation/budget work is memoised per change; identical AI requests are cached for 10 minutes; chat context is compacted for Groq's 8k tokens/min free tier. |
-| **Code quality** | Strict TypeScript, ESLint with zero warnings, pure engine functions separated from UI, shared actions used by both the UI and the AI tools, CI workflow (`.github/workflows/ci.yml`) running lint, type-check, tests, audit and build. |
+| Area              | What's in place                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Testing**       | 76 Vitest tests in 11 suites: layout/seating/budget engine, safety rules, guest CSV import, payment reminders, API routes (validation, rate limits, offline fallbacks), request guard and AI cache, store undo/redo, every co-planner tool (including malformed input), studio keyboard shortcuts, and React components in jsdom. `npm run test:coverage` prints coverage; CI runs it on every push.                                                                                          |
+| **Security**      | Every AI route goes through `src/lib/ai/guard.ts`: same-origin check, per-IP rate limit, body-size cap, and zod schema validation (`src/lib/ai/requests.ts`). API keys live only in `server-only` modules. Prompts fence user text and tell the model to treat it as data. CSP, `X-Frame-Options`, `nosniff`, Referrer and Permissions policies in `next.config.ts`. Model output is rendered as text, never HTML. Production dependencies audit clean.                                       |
+| **Accessibility** | Skip link and landmarks; every form label wraps its control; seat assignment and seat booking both have keyboard/screen-reader paths alongside the canvas; the canvas exposes a text summary and item list; Studio items are selectable from a list and nudgeable with arrow keys; keyboard drag-and-drop on the vendor board; the closed co-planner panel is `inert`, its log is a live region; honours `prefers-reduced-motion`.                                                            |
+| **Efficiency**    | Canvas items are memoised (editing one table redraws one table); Konva and Recharts load on demand; IndexedDB writes are debounced; validation/budget work is memoised per change; identical AI requests are cached for 10 minutes; chat context is compacted for Groq's 8k tokens/min free tier.                                                                                                                                                                                             |
+| **Code quality**  | Strict TypeScript (`noUnusedLocals`, `noImplicitReturns`, `noFallthroughCasesInSwitch`…), ESLint with zero warnings, Prettier formatting enforced in CI, one typed AI client and shared zod schemas for every route, layered modules documented in [ARCHITECTURE.md](ARCHITECTURE.md), pure engine functions separated from UI, shared actions used by both the UI and the AI tools, CI workflow (`.github/workflows/ci.yml`) running format check, lint, type-check, tests, audit and build. |
 
 ## Tech
 

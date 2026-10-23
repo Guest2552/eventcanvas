@@ -26,6 +26,7 @@ export function flushSave() {
 }
 
 if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", flushSave);
   window.addEventListener("pagehide", flushSave);
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flushSave());
 }
@@ -74,13 +75,19 @@ export const useStore = create<StoreState>()(
       events: {},
       hydrated: false,
       history: {},
-      addEvent: (ev) => set((s) => ({ events: { ...s.events, [ev.id]: ev } })),
-      removeEvent: (id) =>
+      // Creating or deleting a whole event is rare and important, so it is saved immediately
+      addEvent: (ev) => {
+        set((s) => ({ events: { ...s.events, [ev.id]: ev } }));
+        flushSave();
+      },
+      removeEvent: (id) => {
         set((s) => {
           const events = { ...s.events };
           delete events[id];
           return { events };
-        }),
+        });
+        flushSave();
+      },
       update: (id, recipe, opts = {}) => {
         const s = get();
         const ev = s.events[id];
@@ -106,7 +113,10 @@ export const useStore = create<StoreState>()(
         const ev = s.events[id];
         if (!h?.past.length || !ev) return;
         const prev = h.past[h.past.length - 1];
-        set({ events: { ...s.events, [id]: prev }, history: { ...s.history, [id]: { past: h.past.slice(0, -1), future: [ev, ...h.future] } } });
+        set({
+          events: { ...s.events, [id]: prev },
+          history: { ...s.history, [id]: { past: h.past.slice(0, -1), future: [ev, ...h.future] } },
+        });
       },
       redo: (id) => {
         const s = get();
@@ -133,6 +143,23 @@ export function useEventPlan(id: string | undefined): EventPlan | undefined {
 
 export function updateEvent(id: string, recipe: Recipe, opts?: { history?: boolean; coalesce?: string }) {
   useStore.getState().update(id, recipe, opts);
+}
+
+/** Like updateEvent, but hands back whatever the recipe returns (e.g. the element it created). */
+export function updateEventAndReturn<T>(
+  id: string,
+  recipe: (d: Draft<EventPlan>) => T,
+  opts?: { history?: boolean; coalesce?: string },
+): T | undefined {
+  let result: T | undefined;
+  updateEvent(
+    id,
+    (d) => {
+      result = recipe(d);
+    },
+    opts,
+  );
+  return result;
 }
 
 export function activeLayoutOf(ev: EventPlan): Layout {

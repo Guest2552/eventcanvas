@@ -9,7 +9,18 @@ export function ScoreRing({ value, size = 64, label, className }: { value: numbe
     <div className={cn("relative inline-flex items-center justify-center", className)} style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--muted)" strokeWidth="6" />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} className="transition-all duration-500" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - pct / 100)}
+          className="transition-all duration-500"
+        />
       </svg>
       <span className="absolute text-center leading-none">
         <span className="block font-semibold tabular-nums" style={{ fontSize: size * 0.28 }}>
@@ -21,7 +32,17 @@ export function ScoreRing({ value, size = 64, label, className }: { value: numbe
   );
 }
 
-export function StatTile({ label, value, sub, className }: { label: string; value: React.ReactNode; sub?: React.ReactNode; className?: string }) {
+export function StatTile({
+  label,
+  value,
+  sub,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn("rounded-xl border bg-card p-3", className)}>
       <p className="text-[11px] font-medium text-muted-foreground">{label}</p>

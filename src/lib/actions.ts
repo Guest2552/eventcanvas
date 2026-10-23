@@ -6,6 +6,7 @@ import type { Draft } from "immer";
 import { nanoid } from "nanoid";
 import { getDef } from "@/lib/catalog/elements";
 import { ZONE_KINDS } from "@/lib/catalog/planning";
+import type { Due } from "@/lib/engine/costs";
 import { aabb, center, defaultLabel, type Point } from "@/lib/engine/geometry";
 import { findFreeSpot } from "@/lib/engine/layout";
 import type { BudgetSuggestion } from "@/lib/engine/offline";
@@ -34,11 +35,45 @@ export function resolveKind(query: string): string | null {
   const direct = q.replace(/\s+/g, "-");
   if (getDef(direct).label !== direct) return direct;
   const aliases: Record<string, string> = {
-    table: "round-8", "round table": "round-8", "dining table": "round-8", chairs: "chair-row", "chair row": "chair-row", dj: "dj-booth", "photo booth": "photo-booth",
-    "selfie booth": "photo-booth", cake: "cake-table", buffet: "buffet", food: "buffet", bar: "bar", drinks: "bar", "dance floor": "dance-floor", stage: "stage",
-    mandap: "mandap", "kids area": "kids-zone", "kids zone": "kids-zone", "play area": "kids-zone", screen: "led-screen", "led wall": "led-screen", speakers: "speaker",
-    speaker: "speaker", flowers: "plant", plants: "plant", gifts: "gift-table", "gift table": "gift-table", registration: "registration", "help desk": "registration",
-    restroom: "restroom", toilet: "restroom", washroom: "restroom", exit: "exit", entry: "entry", entrance: "entry", ramp: "ramp", generator: "generator", sofa: "sofa", lounge: "sofa",
+    table: "round-8",
+    "round table": "round-8",
+    "dining table": "round-8",
+    chairs: "chair-row",
+    "chair row": "chair-row",
+    dj: "dj-booth",
+    "photo booth": "photo-booth",
+    "selfie booth": "photo-booth",
+    cake: "cake-table",
+    buffet: "buffet",
+    food: "buffet",
+    bar: "bar",
+    drinks: "bar",
+    "dance floor": "dance-floor",
+    stage: "stage",
+    mandap: "mandap",
+    "kids area": "kids-zone",
+    "kids zone": "kids-zone",
+    "play area": "kids-zone",
+    screen: "led-screen",
+    "led wall": "led-screen",
+    speakers: "speaker",
+    speaker: "speaker",
+    flowers: "plant",
+    plants: "plant",
+    gifts: "gift-table",
+    "gift table": "gift-table",
+    registration: "registration",
+    "help desk": "registration",
+    restroom: "restroom",
+    toilet: "restroom",
+    washroom: "restroom",
+    exit: "exit",
+    entry: "entry",
+    entrance: "entry",
+    ramp: "ramp",
+    generator: "generator",
+    sofa: "sofa",
+    lounge: "sofa",
   };
   for (const [k, v] of Object.entries(aliases)) if (q.includes(k)) return v;
   return null;
@@ -63,12 +98,25 @@ export function addElement(d: D, kind: string, opts: { x?: number; y?: number; n
     pos = findFreeSpot(layout, kind, { near: refPoint(layout, opts.near) });
   }
   if (!pos) return null;
-  const el: PlacedElement = { id: nanoid(8), kind, x: pos.x, y: pos.y, w: def.w, h: def.h, rotation: 0, label: opts.label ?? defaultLabel(layout, kind) };
+  const el: PlacedElement = {
+    id: nanoid(8),
+    kind,
+    x: pos.x,
+    y: pos.y,
+    w: def.w,
+    h: def.h,
+    rotation: 0,
+    label: opts.label ?? defaultLabel(layout, kind),
+  };
   draftLayout(d).elements.push(el);
   return el;
 }
 
-export function moveElement(d: D, target: string, opts: { near?: string; awayFrom?: string; x?: number; y?: number }): { moved: PlacedElement; distance: number } | null {
+export function moveElement(
+  d: D,
+  target: string,
+  opts: { near?: string; awayFrom?: string; x?: number; y?: number },
+): { moved: PlacedElement; distance: number } | null {
   const layout = draftLayout(d) as Layout;
   const el = resolveElements(layout, target)[0];
   if (!el) return null;
@@ -132,6 +180,19 @@ export function addZone(d: D, box: { x: number; y: number; w: number; h: number 
   const zone = { id: nanoid(8), name, kind, color: ZONE_KINDS[kind].color, ...box };
   draftLayout(d).zones.push(zone);
   return zone;
+}
+
+/** Settles a payment reminder: an expense line is paid in full, a vendor's balance is cleared. */
+export function markDuePaid(d: D, due: Due) {
+  if (due.source === "line") {
+    const line = d.budget.lines.find((l) => l.id === due.id);
+    if (line) line.paid = Math.max(line.estimated, line.actual);
+    return;
+  }
+  const vendor = d.vendors.find((v) => v.id === due.id);
+  if (!vendor) return;
+  vendor.paid = vendor.quote;
+  if (vendor.status === "booked") vendor.status = "paid";
 }
 
 export function applySuggestion(d: D, s: BudgetSuggestion) {

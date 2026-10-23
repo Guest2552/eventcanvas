@@ -31,7 +31,11 @@ export function bookingsBySeat(ev: EventPlan, layout: Layout): Map<string, Booki
   return new Map(ev.bookings.filter((b) => b.layoutId === layout.id).map((b) => [b.seatId, b]));
 }
 
-export function guestSeatVisual(g: Guest | undefined, seat: SeatInfo, opts: { highlightGuestId?: string; live?: boolean } = {}): SeatVisual {
+export function guestSeatVisual(
+  g: Guest | undefined,
+  seat: SeatInfo,
+  opts: { highlightGuestId?: string; live?: boolean } = {},
+): SeatVisual {
   if (!g) return { fill: SEAT_COLORS.empty, stroke: "#a8a29e", tooltip: `${seat.label} · empty` };
   const selected = opts.highlightGuestId === g.id;
   let fill = g.rsvp === "yes" ? SEAT_COLORS.yes : SEAT_COLORS.pending;
@@ -41,6 +45,14 @@ export function guestSeatVisual(g: Guest | undefined, seat: SeatInfo, opts: { hi
   return {
     fill,
     stroke: selected ? SEAT_COLORS.selected : g.rsvp === "yes" || opts.live ? "#ffffff" : "#e11d48",
-    tooltip: `${g.name} · ${seat.tableLabel} seat ${seat.index + 1}${g.vip ? " · VIP" : ""}${g.accessible ? " · ♿" : ""}${opts.live ? (g.checkedIn ? " · checked in" : " · not arrived") : g.rsvp !== "yes" ? ` · RSVP ${g.rsvp}` : ""}`,
+    tooltip: [
+      g.name,
+      `${seat.tableLabel} seat ${seat.index + 1}`,
+      g.vip && "VIP",
+      g.accessible && "♿",
+      opts.live ? (g.checkedIn ? "checked in" : "not arrived") : g.rsvp !== "yes" && `RSVP ${g.rsvp}`,
+    ]
+      .filter(Boolean)
+      .join(" · "),
   };
 }

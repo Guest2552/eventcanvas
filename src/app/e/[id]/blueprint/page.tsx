@@ -2,7 +2,7 @@
 
 import { Columns2, Copy, Grid3x3, Maximize, Plus, Square, Trash2, Wand2, ZoomIn, ZoomOut } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BlueprintCanvas, type CanvasControls } from "@/components/blueprint/canvas";
 import { ElementLibrary } from "@/components/blueprint/element-library";
@@ -16,7 +16,8 @@ import { getDef } from "@/lib/catalog/elements";
 import { aabb, center } from "@/lib/engine/geometry";
 import { vendorChecklist } from "@/lib/engine/planning";
 import { issueElements, type Issue, validateLayout } from "@/lib/engine/validation";
-import { draftLayout, useStore } from "@/lib/store";
+import { draftLayout, updateEventAndReturn, useStore } from "@/lib/store";
+import { useStudioShortcuts } from "@/components/blueprint/use-studio-shortcuts";
 import type { PlacedElement, Zone } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -53,11 +54,8 @@ export default function BlueprintPage() {
     );
 
   const add = (kind: string, x?: number, y?: number) => {
-    let created: PlacedElement | null = null;
-    update((d) => {
-      created = addElement(d, kind, { x, y });
-    });
-    if (created) setSelected((created as PlacedElement).id);
+    const created = updateEventAndReturn(ev.id, (d) => addElement(d, kind, { x, y }));
+    if (created) setSelected(created.id);
     else toast.error(`No free space for a ${getDef(kind).label.toLowerCase()}. Try a bigger venue or remove something.`);
   };
 
@@ -65,7 +63,9 @@ export default function BlueprintPage() {
     if (selectedEl) {
       const seated = ev.guests.filter((g) => g.seatId?.startsWith(`${selectedEl.id}:`)).length;
       update((d) => removeElements(d, [selectedEl.id]));
-      toast(`Removed ${selectedEl.label}${seated ? `. ${seated} guests now need seats` : ""}`, { action: { label: "Undo", onClick: () => undo() } });
+      toast(`Removed ${selectedEl.label}${seated ? `. ${seated} guests now need seats` : ""}`, {
+        action: { label: "Undo", onClick: () => undo() },
+      });
     } else if (selectedZone) {
       update((d) => {
         const l = draftLayout(d);
@@ -77,38 +77,22 @@ export default function BlueprintPage() {
 
   const undo = () => useStore.getState().undo(ev.id);
 
-  // Keyboard shortcuts for the studio
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, textarea, select")) return;
-      if (e.key === "Escape") {
-        setSelected(null);
-        setZoneDraw(false);
-      }
-      if (!selectedEl && !selectedZone) return;
-      if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        deleteSelected();
-      }
-      if (!selectedEl) return;
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
-        e.preventDefault();
-        let copy: PlacedElement | null = null;
-        update((d) => {
-          copy = duplicateElement(d, selectedEl.id);
-        });
-        if (copy) setSelected((copy as PlacedElement).id);
-      }
-      if (e.key.toLowerCase() === "r" && !e.ctrlKey && !e.metaKey) patchElement(selectedEl.id, { rotation: (selectedEl.rotation + 90) % 360 });
-      const step = e.shiftKey ? 2 : 0.5;
-      const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
-      if (moves[e.key]) {
-        e.preventDefault();
-        patchElement(selectedEl.id, { x: selectedEl.x + moves[e.key][0], y: selectedEl.y + moves[e.key][1] }, `nudge-${selectedEl.id}`);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+  const duplicate = (el: PlacedElement) => {
+    const copy = updateEventAndReturn(ev.id, (d) => duplicateElement(d, el.id));
+    if (copy) setSelected(copy.id);
+  };
+
+  useStudioShortcuts({
+    hasSelection: !!(selectedEl || selectedZone),
+    selectedElement: selectedEl,
+    onEscape: () => {
+      setSelected(null);
+      setZoneDraw(false);
+    },
+    onDelete: deleteSelected,
+    onDuplicate: duplicate,
+    onRotate: (el) => patchElement(el.id, { rotation: (el.rotation + 90) % 360 }),
+    onNudge: (el, dx, dy) => patchElement(el.id, { x: el.x + dx, y: el.y + dy }, `nudge-${el.id}`),
   });
 
   if (!ev || !validation) return null;
@@ -149,12 +133,15 @@ export default function BlueprintPage() {
   return (
     <div className="flex h-full min-h-[600px] flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b bg-card px-3 py-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-thin">
+        <div className="flex min-w-0 flex-1 scrollbar-thin items-center gap-1 overflow-x-auto">
           {ev.layouts.map((l) => (
             <button
               key={l.id}
               onClick={() => setActive(l.id)}
-              className={cn("shrink-0 rounded-md px-2.5 py-1 text-xs whitespace-nowrap transition", l.id === ev.activeLayoutId ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}
+              className={cn(
+                "shrink-0 rounded-md px-2.5 py-1 text-xs whitespace-nowrap transition",
+                l.id === ev.activeLayoutId ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
             >
               {l.name}
             </button>
@@ -182,13 +169,33 @@ export default function BlueprintPage() {
             <Columns2 className="size-3.5" /> Compare
           </Button>
           <Tooltip>
-            <TooltipTrigger render={<Button size="icon-sm" variant={zoneDraw ? "default" : "outline"} onClick={() => setZoneDraw((z) => !z)} aria-label="Draw zone" aria-pressed={zoneDraw} />}>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon-sm"
+                  variant={zoneDraw ? "default" : "outline"}
+                  onClick={() => setZoneDraw((z) => !z)}
+                  aria-label="Draw zone"
+                  aria-pressed={zoneDraw}
+                />
+              }
+            >
               <Square />
             </TooltipTrigger>
             <TooltipContent>{zoneDraw ? "Drag on the floor to draw a zone (Esc to cancel)" : "Draw a zone"}</TooltipContent>
           </Tooltip>
           <Tooltip>
-            <TooltipTrigger render={<Button size="icon-sm" variant={grid ? "secondary" : "outline"} onClick={() => setGrid((g) => !g)} aria-label="Toggle grid" aria-pressed={grid} />}>
+            <TooltipTrigger
+              render={
+                <Button
+                  size="icon-sm"
+                  variant={grid ? "secondary" : "outline"}
+                  onClick={() => setGrid((g) => !g)}
+                  aria-label="Toggle grid"
+                  aria-pressed={grid}
+                />
+              }
+            >
               <Grid3x3 />
             </TooltipTrigger>
             <TooltipContent>Grid (5 ft squares)</TooltipContent>
@@ -233,7 +240,9 @@ export default function BlueprintPage() {
           />
           <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-1.5 text-[11px]">
             <span className="rounded-md bg-card/90 px-2 py-1 shadow-sm">Scroll to zoom · drag empty space to pan</span>
-            {warnIds.size > 0 && <span className="rounded-md bg-destructive/10 px-2 py-1 text-destructive shadow-sm">Red dashed = needs attention</span>}
+            {warnIds.size > 0 && (
+              <span className="rounded-md bg-destructive/10 px-2 py-1 text-destructive shadow-sm">Red dashed = needs attention</span>
+            )}
           </div>
           {layout.elements.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -247,7 +256,7 @@ export default function BlueprintPage() {
             </div>
           )}
         </section>
-        <aside className="shrink-0 overflow-y-auto border-t bg-card scrollbar-thin lg:w-80 lg:border-t-0 lg:border-l">
+        <aside className="shrink-0 scrollbar-thin overflow-y-auto border-t bg-card lg:w-80 lg:border-t-0 lg:border-l">
           {selectedEl ? (
             <ElementInspector
               ev={ev}
@@ -255,16 +264,16 @@ export default function BlueprintPage() {
               el={selectedEl}
               onChange={(patch, field) => patchElement(selectedEl.id, patch, `${selectedEl.id}-${field}`)}
               onDuplicate={() => {
-                let copy: PlacedElement | null = null;
-                update((d) => {
-                  copy = duplicateElement(d, selectedEl.id);
-                });
-                if (copy) setSelected((copy as PlacedElement).id);
+                duplicate(selectedEl);
               }}
               onDelete={deleteSelected}
             />
           ) : selectedZone ? (
-            <ZoneInspector zone={selectedZone} onChange={(patch, field) => patchZone(selectedZone.id, patch, `${selectedZone.id}-${field}`)} onDelete={deleteSelected} />
+            <ZoneInspector
+              zone={selectedZone}
+              onChange={(patch, field) => patchZone(selectedZone.id, patch, `${selectedZone.id}-${field}`)}
+              onDelete={deleteSelected}
+            />
           ) : (
             <LayoutOverview
               ev={ev}
@@ -274,7 +283,9 @@ export default function BlueprintPage() {
               onIssueClick={focusIssue}
               onSelectItem={setSelected}
               onRename={(name) => update((d) => void (draftLayout(d).name = name), { coalesce: `rename-${layout.id}` })}
-              onVenueChange={(patch, field) => update((d) => void Object.assign(draftLayout(d).venue, patch), { coalesce: `venue-${field}` })}
+              onVenueChange={(patch, field) =>
+                update((d) => void Object.assign(draftLayout(d).venue, patch), { coalesce: `venue-${field}` })
+              }
             />
           )}
         </aside>
@@ -296,7 +307,11 @@ export default function BlueprintPage() {
             }
           });
           setSelected(null);
-          toast.success(replace ? "Layout regenerated. Re-run auto-seating on the Guests page." : `Created "${l.name}". Compare it with your other versions.`);
+          toast.success(
+            replace
+              ? "Layout regenerated. Re-run auto-seating on the Guests page."
+              : `Created "${l.name}". Compare it with your other versions.`,
+          );
         }}
       />
       <CompareDialog ev={ev} open={compareOpen} onOpenChange={setCompareOpen} onActivate={(id) => (setActive(id), setCompareOpen(false))} />

@@ -16,11 +16,10 @@ import { shiftDate, toIsoDate } from "@/lib/engine/costs";
 import { createEventPlan, type NewEventInput } from "@/lib/engine/factory";
 import { parsePrompt } from "@/lib/engine/offline";
 import { inrShort } from "@/lib/format";
+import { aiApi } from "@/lib/ai-client";
 import { useStore } from "@/lib/store";
 import type { EventType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type PlanResponse = { plan: NewEventInput & { highlights?: string[] }; source: "ai" | "offline"; model?: string };
 
 export default function NewEventPage() {
   return (
@@ -54,23 +53,22 @@ function NewEvent() {
   const set = <K extends keyof NewEventInput>(k: K, v: NewEventInput[K]) => setForm((f) => ({ ...f, [k]: v }));
 
   const generate = async (text = prompt) => {
-    if (!text.trim()) return toast.error("Describe your event first");
+    if (!text.trim()) {
+      toast.error("Describe your event first");
+      return;
+    }
     setLoading(true);
-    try {
-      const res = await fetch("/api/ai/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt: text, today: toIsoDate(new Date()) }) });
-      if (!res.ok) throw new Error(await res.text());
-      const data = (await res.json()) as PlanResponse;
+    const data = await aiApi.plan({ prompt: text, today: toIsoDate(new Date()) });
+    if (data) {
       setForm({ ...data.plan, notes: text });
       setHighlights(data.plan.highlights ?? []);
       setSource(data.source === "ai" ? `Planned by AI (${data.model})` : "Planned offline (no AI key configured)");
-    } catch {
-      const plan = parsePrompt(text);
-      setForm(plan);
+    } else {
+      setForm(parsePrompt(text));
       setHighlights([]);
       setSource("Planned offline: the AI service was unreachable");
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -82,7 +80,10 @@ function NewEvent() {
   }, []);
 
   const create = () => {
-    if (!form.name.trim()) return toast.error("Give your event a name");
+    if (!form.name.trim()) {
+      toast.error("Give your event a name");
+      return;
+    }
     const ev = createEventPlan({ ...form, templateId });
     addEvent(ev);
     toast.success("Your plan is ready: blueprint, budget, timeline and checklist");
@@ -114,7 +115,8 @@ function NewEvent() {
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">Mention guests, city, date, budget, theme, indoor/outdoor: anything you know.</p>
             <Button onClick={() => generate()} disabled={loading} className="gap-1.5">
-              {loading ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />} {loading ? "Planning…" : "Draft my plan"}
+              {loading ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}{" "}
+              {loading ? "Planning…" : "Draft my plan"}
             </Button>
           </div>
           {source && (
@@ -141,7 +143,10 @@ function NewEvent() {
                 <button
                   key={t}
                   onClick={() => set("type", t)}
-                  className={cn("rounded-xl border p-3 text-left transition hover:border-primary/50", form.type === t && "border-primary bg-primary/5 ring-2 ring-primary/20")}
+                  className={cn(
+                    "rounded-xl border p-3 text-left transition hover:border-primary/50",
+                    form.type === t && "border-primary bg-primary/5 ring-2 ring-primary/20",
+                  )}
                   aria-pressed={form.type === t}
                 >
                   <div className="text-2xl">{EVENT_TYPES[t].emoji}</div>
@@ -174,10 +179,20 @@ function NewEvent() {
               <Input type="number" min={1} value={form.guestCount} onChange={(e) => set("guestCount", Number(e.target.value))} />
             </Field>
             <Field label={`Total budget (₹) · ${inrShort(form.budgetTotal || 0)}`}>
-              <Input type="number" min={0} step={10000} value={form.budgetTotal} onChange={(e) => set("budgetTotal", Number(e.target.value))} />
+              <Input
+                type="number"
+                min={0}
+                step={10000}
+                value={form.budgetTotal}
+                onChange={(e) => set("budgetTotal", Number(e.target.value))}
+              />
             </Field>
             <Field label="Theme / vibe" className="sm:col-span-2">
-              <Input value={form.theme} onChange={(e) => set("theme", e.target.value)} placeholder="Marigold & ivory, temple gold, pastel garden…" />
+              <Input
+                value={form.theme}
+                onChange={(e) => set("theme", e.target.value)}
+                placeholder="Marigold & ivory, temple gold, pastel garden…"
+              />
             </Field>
           </div>
 
@@ -188,7 +203,10 @@ function NewEvent() {
                 <button
                   key={t.id}
                   onClick={() => set("templateId", t.id)}
-                  className={cn("relative rounded-xl border p-3 text-left transition hover:border-primary/50", templateId === t.id && "border-primary bg-primary/5 ring-2 ring-primary/20")}
+                  className={cn(
+                    "relative rounded-xl border p-3 text-left transition hover:border-primary/50",
+                    templateId === t.id && "border-primary bg-primary/5 ring-2 ring-primary/20",
+                  )}
                   aria-pressed={templateId === t.id}
                 >
                   {t.id === suggested.id && <Badge className="absolute -top-2 right-2 h-4 px-1.5 text-[10px]">Suggested</Badge>}
@@ -198,7 +216,9 @@ function NewEvent() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">You can resize the venue and move everything later. The auto-layout places tables, stage and buffet with safe aisles.</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              You can resize the venue and move everything later. The auto-layout places tables, stage and buffet with safe aisles.
+            </p>
           </div>
 
           <div className="flex justify-end">

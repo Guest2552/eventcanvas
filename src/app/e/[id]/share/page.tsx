@@ -29,7 +29,8 @@ export default function SharePage() {
   const bookings = ev.bookings.filter((b) => b.layoutId === layout.id);
   const revenue = bookings.reduce((s, b) => s + (b.passType === "vip" ? ev.booking.priceVip : ev.booking.priceGeneral), 0);
   const seatedGuests = ev.guests.filter((g) => g.seatId && g.rsvp !== "no" && seats.has(g.seatId));
-  const setB = (patch: Partial<typeof ev.booking>, field: string) => update((d) => void Object.assign(d.booking, patch), { coalesce: `booking-${field}` });
+  const setB = (patch: Partial<typeof ev.booking>, field: string) =>
+    update((d) => void Object.assign(d.booking, patch), { coalesce: `booking-${field}` });
 
   const copy = async (text: string, msg: string) => {
     await navigator.clipboard.writeText(text).catch(() => {});
@@ -45,26 +46,44 @@ export default function SharePage() {
               <h2 className="flex items-center gap-2 text-xl font-semibold">
                 <Ticket className="size-5 text-primary" /> Public seat booking
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">Let attendees pick their own seats on your blueprint, BookMyShow style. Great for community nights, concerts and fundraisers. Seats inside a VIP zone use VIP pricing.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Let attendees pick their own seats on your blueprint, BookMyShow style. Great for community nights, concerts and
+                fundraisers. Seats inside a VIP zone use VIP pricing.
+              </p>
             </div>
-            <Switch checked={ev.booking.enabled} onCheckedChange={(enabled) => setB({ enabled }, "enabled")} aria-label="Enable public booking" />
+            <Switch
+              checked={ev.booking.enabled}
+              onCheckedChange={(enabled) => setB({ enabled }, "enabled")}
+              aria-label="Enable public booking"
+            />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1 sm:col-span-2">
-              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Page title</span>
+              <span className="flex items-center gap-2 text-sm text-xs leading-none font-medium">Page title</span>
               <Input value={ev.booking.title} onChange={(e) => setB({ title: e.target.value }, "title")} />
             </label>
             <label className="block space-y-1">
-              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">General pass (₹)</span>
-              <Input type="number" min={0} value={ev.booking.priceGeneral} onChange={(e) => setB({ priceGeneral: Number(e.target.value) }, "pg")} />
+              <span className="flex items-center gap-2 text-sm text-xs leading-none font-medium">General pass (₹)</span>
+              <Input
+                type="number"
+                min={0}
+                value={ev.booking.priceGeneral}
+                onChange={(e) => setB({ priceGeneral: Number(e.target.value) }, "pg")}
+              />
             </label>
             <label className="block space-y-1">
-              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">VIP pass (₹)</span>
+              <span className="flex items-center gap-2 text-sm text-xs leading-none font-medium">VIP pass (₹)</span>
               <Input type="number" min={0} value={ev.booking.priceVip} onChange={(e) => setB({ priceVip: Number(e.target.value) }, "pv")} />
             </label>
             <label className="block space-y-1">
-              <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Max seats per booking</span>
-              <Input type="number" min={1} max={20} value={ev.booking.maxPerOrder} onChange={(e) => setB({ maxPerOrder: Math.max(1, Number(e.target.value)) }, "max")} />
+              <span className="flex items-center gap-2 text-sm text-xs leading-none font-medium">Max seats per booking</span>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={ev.booking.maxPerOrder}
+                onChange={(e) => setB({ maxPerOrder: Math.max(1, Number(e.target.value)) }, "max")}
+              />
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-2 rounded-xl bg-muted/50 p-3">
@@ -77,7 +96,8 @@ export default function SharePage() {
             </Link>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Demo note: plans are stored in this browser, so open the booking page in another tab here. Bookings appear on your blueprint instantly. Hosting it for real attendees would need a shared database.
+            Demo note: plans are stored in this browser, so open the booking page in another tab here. Bookings appear on your blueprint
+            instantly. Hosting it for real attendees would need a shared database.
           </p>
         </div>
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border bg-card p-5">
@@ -104,15 +124,27 @@ export default function SharePage() {
               <li key={b.id} className="flex items-center gap-3 px-4 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">{b.name}</span>
                 <Badge variant="outline">{seats.get(b.seatId)?.label ?? "Removed seat"}</Badge>
-                <Badge className={b.passType === "vip" ? "bg-marigold text-foreground" : ""} variant={b.passType === "vip" ? "default" : "secondary"}>
+                <Badge
+                  className={b.passType === "vip" ? "bg-marigold text-foreground" : ""}
+                  variant={b.passType === "vip" ? "default" : "secondary"}
+                >
                   {b.passType.toUpperCase()}
                 </Badge>
-                <Button size="icon-xs" variant="ghost" onClick={() => update((d) => void (d.bookings = d.bookings.filter((x) => x.id !== b.id)))} aria-label="Cancel booking">
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  onClick={() => update((d) => void (d.bookings = d.bookings.filter((x) => x.id !== b.id)))}
+                  aria-label="Cancel booking"
+                >
                   <Trash2 />
                 </Button>
               </li>
             ))}
-          {bookings.length === 0 && <li className="p-6 text-center text-sm text-muted-foreground">No bookings yet. Open the booking page and grab a seat to try it.</li>}
+          {bookings.length === 0 && (
+            <li className="p-6 text-center text-sm text-muted-foreground">
+              No bookings yet. Open the booking page and grab a seat to try it.
+            </li>
+          )}
         </ul>
       </section>
 
@@ -120,13 +152,20 @@ export default function SharePage() {
         <p className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
           <Link2 className="size-4 text-primary" /> &ldquo;Find my seat&rdquo; links for guests
         </p>
-        <p className="mb-3 text-xs text-muted-foreground">Each link shows one guest their table on a mini map. It works on any phone and contains only that guest&apos;s own name and seat.</p>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Each link shows one guest their table on a mini map. It works on any phone and contains only that guest&apos;s own name and seat.
+        </p>
         <div className="grid max-h-72 gap-1.5 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
           {seatedGuests.slice(0, 60).map((g) => (
             <div key={g.id} className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm">
               <span className="min-w-0 flex-1 truncate">{g.name}</span>
               <span className="text-xs text-muted-foreground">{seats.get(g.seatId!)?.tableLabel}</span>
-              <Button size="icon-xs" variant="ghost" onClick={() => copy(buildSeatLink(origin, ev, layout, g) ?? "", `Seat link for ${g.name} copied`)} aria-label={`Copy seat link for ${g.name}`}>
+              <Button
+                size="icon-xs"
+                variant="ghost"
+                onClick={() => copy(buildSeatLink(origin, ev, layout, g) ?? "", `Seat link for ${g.name} copied`)}
+                aria-label={`Copy seat link for ${g.name}`}
+              >
                 <Copy />
               </Button>
             </div>

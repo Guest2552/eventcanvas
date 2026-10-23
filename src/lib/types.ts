@@ -5,17 +5,7 @@ export type VendorStatus = "todo" | "contacted" | "quoted" | "booked" | "paid" |
 export type ZoneKind = "ceremony" | "dining" | "dance" | "vip" | "kids" | "service" | "lounge" | "custom";
 
 export type BudgetCategory =
-  | "venue"
-  | "catering"
-  | "decor"
-  | "rentals"
-  | "photography"
-  | "entertainment"
-  | "attire"
-  | "invitations"
-  | "gifts"
-  | "logistics"
-  | "misc";
+  "venue" | "catering" | "decor" | "rentals" | "photography" | "entertainment" | "attire" | "invitations" | "gifts" | "logistics" | "misc";
 
 export type VendorCategory =
   | "venue"

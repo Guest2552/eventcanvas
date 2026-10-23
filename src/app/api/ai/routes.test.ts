@@ -73,7 +73,16 @@ describe("offline fallbacks without an API key", () => {
   });
 
   it("optimize hands back the built-in suggestions untouched", async () => {
-    const baseline = [{ id: "b1", title: "Remove 1 table", detail: "x", category: "rentals", saving: 1200, action: { type: "removeTables", kind: "round-10", count: 1 } }];
+    const baseline = [
+      {
+        id: "b1",
+        title: "Remove 1 table",
+        detail: "x",
+        category: "rentals",
+        saving: 1200,
+        action: { type: "removeTables", kind: "round-10", count: 1 },
+      },
+    ];
     const body = await (await optimize(req({ event: {}, budget: {}, baseline }))).json();
     expect(body.source).toBe("offline");
     expect(body.suggestions).toEqual(baseline);

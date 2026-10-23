@@ -22,8 +22,11 @@ export async function POST(req: Request) {
       model: m.model,
       providerOptions: providerOptions(m),
       maxRetries: retriesFor(),
-      instructions:
-        "You convert a host's plain-language seating wishes into structured constraints. Only use names that appear in the guest list (exact spelling) or exact group names. If a wish mentions a group, return the group name. Ignore wishes you cannot map.",
+      instructions: [
+        "You convert a host's plain-language seating wishes into structured constraints.",
+        "Only use names that appear in the guest list (exact spelling) or exact group names.",
+        "If a wish mentions a group, return the group name. Ignore wishes you cannot map.",
+      ].join(" "),
       prompt: `Guest list (name | group):\n${roster}\n\nSeating wishes: """${String(rules).slice(0, 2000)}"""`,
       output: Output.object({ schema: seatingRulesSchema }),
     });

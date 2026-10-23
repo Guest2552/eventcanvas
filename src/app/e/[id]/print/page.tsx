@@ -25,7 +25,12 @@ export default function PrintPage() {
   const validation = validateLayout(ev, layout);
   const tables = layout.elements
     .filter((e) => getDef(e.kind).category === "seating")
-    .map((t) => ({ t, guests: ev.guests.filter((g) => g.seatId?.startsWith(`${t.id}:`) && g.rsvp !== "no").sort((a, b) => Number(a.seatId!.split(":")[1]) - Number(b.seatId!.split(":")[1])) }))
+    .map((t) => ({
+      t,
+      guests: ev.guests
+        .filter((g) => g.seatId?.startsWith(`${t.id}:`) && g.rsvp !== "no")
+        .sort((a, b) => Number(a.seatId!.split(":")[1]) - Number(b.seatId!.split(":")[1])),
+    }))
     .filter((x) => x.guests.length);
   const schedule = [...ev.schedule].sort((a, b) => sortKey(ev, a.time) - sortKey(ev, b.time));
 
@@ -44,7 +49,8 @@ export default function PrintPage() {
         <p className="text-xs tracking-widest text-primary uppercase">{EVENT_TYPES[ev.type].label} plan · EventCanvas</p>
         <h1 className="mt-1 text-3xl font-semibold">{ev.name}</h1>
         <p className="mt-1 text-stone-600">
-          {formatDate(ev.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {formatTime(ev.startTime)} · {layout.venue.name}, {ev.city} · Theme: {ev.theme}
+          {formatDate(ev.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {formatTime(ev.startTime)} ·{" "}
+          {layout.venue.name}, {ev.city} · Theme: {ev.theme}
         </p>
         <div className="mt-3 grid grid-cols-4 gap-2 text-center">
           {[

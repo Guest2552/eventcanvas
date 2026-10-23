@@ -26,7 +26,8 @@ export function validateLayout(ev: EventPlan, layout: Layout) {
     issues.push({ id, severity, title, detail, elementIds });
 
   for (const el of els) {
-    if (!insideVenue(aabb(el), layout)) add("error", `oob-${el.id}`, `${el.label} is outside the venue`, "Drag it back inside the walls.", [el.id]);
+    if (!insideVenue(aabb(el), layout))
+      add("error", `oob-${el.id}`, `${el.label} is outside the venue`, "Drag it back inside the walls.", [el.id]);
   }
 
   // Overlaps (overlay items like speakers and plants may sit on other items)
@@ -38,7 +39,10 @@ export function validateLayout(ev: EventPlan, layout: Layout) {
       const a = solid[i];
       const b = solid[j];
       if (intersects(aabb(a), aabb(b), 0.1)) {
-        add("error", `overlap-${a.id}-${b.id}`, `${a.label} overlaps ${b.label}`, "Move one of them so guests and staff can pass.", [a.id, b.id]);
+        add("error", `overlap-${a.id}-${b.id}`, `${a.label} overlaps ${b.label}`, "Move one of them so guests and staff can pass.", [
+          a.id,
+          b.id,
+        ]);
         continue;
       }
       if (!isSeating(a.kind) && !isSeating(b.kind)) continue;
@@ -51,7 +55,10 @@ export function validateLayout(ev: EventPlan, layout: Layout) {
   }
   if (tight > 0) {
     const ids = [...new Set(tightPairs.flat())];
-    const names = ids.slice(0, 4).map((id) => els.find((e) => e.id === id)?.label).join(", ");
+    const names = ids
+      .slice(0, 4)
+      .map((id) => els.find((e) => e.id === id)?.label)
+      .join(", ");
     add(
       "warning",
       "aisles",
@@ -69,7 +76,12 @@ export function validateLayout(ev: EventPlan, layout: Layout) {
 
   const sqft = guests > 0 ? area / guests : Infinity;
   if (sqft < SQFT_PER_GUEST) {
-    add("warning", "density", `Crowded: ${sqft.toFixed(1)} sq ft per guest`, `Seated events need roughly ${SQFT_PER_GUEST}+ sq ft per guest. Consider a bigger venue or fewer guests.`);
+    add(
+      "warning",
+      "density",
+      `Crowded: ${sqft.toFixed(1)} sq ft per guest`,
+      `Seated events need roughly ${SQFT_PER_GUEST}+ sq ft per guest. Consider a bigger venue or fewer guests.`,
+    );
   }
 
   const entries = els.filter((e) => getDef(e.kind).isEntry);
@@ -77,14 +89,25 @@ export function validateLayout(ev: EventPlan, layout: Layout) {
   if (entries.length === 0) add("error", "no-entry", "No entry marked", "Add an entry so guests know where to arrive.");
   const neededExits = guests > 500 ? 3 : guests > 50 ? 2 : 1;
   if (exits.length < neededExits) {
-    add("error", "exits", `Needs ${neededExits} exits`, `Venues with ${guests} people need at least ${neededExits} separate ways out. Add an emergency exit.`);
+    add(
+      "error",
+      "exits",
+      `Needs ${neededExits} exits`,
+      `Venues with ${guests} people need at least ${neededExits} separate ways out. Add an emergency exit.`,
+    );
   }
   for (const ex of exits) {
     const blockers = solid.filter(
       (e) => e.id !== ex.id && e.kind !== "ramp" && !getDef(e.kind).isExit && !getDef(e.kind).isEntry && gap(footprint(e), aabb(ex)) < 3,
     );
     if (blockers.length) {
-      add("warning", `blocked-${ex.id}`, `${ex.label} is crowded`, `${blockers.map((b) => b.label).join(", ")} ${blockers.length > 1 ? "are" : "is"} within 3 ft of the doorway.`, [ex.id, ...blockers.map((b) => b.id)]);
+      add(
+        "warning",
+        `blocked-${ex.id}`,
+        `${ex.label} is crowded`,
+        `${blockers.map((b) => b.label).join(", ")} ${blockers.length > 1 ? "are" : "is"} within 3 ft of the doorway.`,
+        [ex.id, ...blockers.map((b) => b.id)],
+      );
     }
   }
 
@@ -98,15 +121,24 @@ export function validateLayout(ev: EventPlan, layout: Layout) {
       return Math.min(...doorPoints.map((p) => dist(p, s))) > 35;
     });
     if (far.length) {
-      add("warning", "access-far", `${far.length} wheelchair user${far.length > 1 ? "s" : ""} seated far from exits`, "Seat guests with mobility needs within ~35 ft of a door. Auto-seating does this for you.");
+      add(
+        "warning",
+        "access-far",
+        `${far.length} wheelchair user${far.length > 1 ? "s" : ""} seated far from exits`,
+        "Seat guests with mobility needs within ~35 ft of a door. Auto-seating does this for you.",
+      );
     }
-    if (!els.some((e) => e.kind === "ramp")) add("info", "no-ramp", "Add a wheelchair ramp", `${accessible.length} guests need step-free access.`);
+    if (!els.some((e) => e.kind === "ramp"))
+      add("info", "no-ramp", "Add a wheelchair ramp", `${accessible.length} guests need step-free access.`);
   }
 
-  if (guests > 40 && !els.some((e) => e.kind === "restroom")) add("info", "restroom", "No restrooms marked", "Mark restrooms so guests and staff can find them.");
-  if (!layout.venue.indoor && guests > 100 && !els.some((e) => e.kind === "generator")) add("info", "power", "Outdoor venue without backup power", "Add a generator for lights and sound.");
+  if (guests > 40 && !els.some((e) => e.kind === "restroom"))
+    add("info", "restroom", "No restrooms marked", "Mark restrooms so guests and staff can find them.");
+  if (!layout.venue.indoor && guests > 100 && !els.some((e) => e.kind === "generator"))
+    add("info", "power", "Outdoor venue without backup power", "Add a generator for lights and sound.");
   const kids = ev.guests.filter((g) => g.child && g.rsvp !== "no").length;
-  if (kids >= 6 && !els.some((e) => e.kind === "kids-zone")) add("info", "kids", `${kids} kids attending`, "A kids zone keeps little guests busy and parents relaxed.");
+  if (kids >= 6 && !els.some((e) => e.kind === "kids-zone"))
+    add("info", "kids", `${kids} kids attending`, "A kids zone keeps little guests busy and parents relaxed.");
 
   const errors = issues.filter((i) => i.severity === "error").length;
   const warnings = issues.filter((i) => i.severity === "warning").length;

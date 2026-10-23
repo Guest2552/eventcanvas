@@ -7,7 +7,11 @@ import { inr, inrShort } from "@/lib/format";
 
 export function PlannedVsCommittedChart({ data }: { data: { name: string; Planned: number; Committed: number; color: string }[] }) {
   return (
-    <div className="h-72" role="img" aria-label={`Planned versus committed spend: ${data.map((d) => `${d.name} ${inrShort(d.Committed)} of ${inrShort(d.Planned)}`).join("; ")}`}>
+    <div
+      className="h-72"
+      role="img"
+      aria-label={`Planned versus committed spend: ${data.map((d) => `${d.name} ${inrShort(d.Committed)} of ${inrShort(d.Planned)}`).join("; ")}`}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ left: 10, right: 16 }}>
           <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#eee6dd" />
@@ -30,7 +34,11 @@ export function PlannedVsCommittedChart({ data }: { data: { name: string; Planne
 export function SpendDonut({ data }: { data: { category: string; label: string; color: string; committed: number }[] }) {
   const slices = data.filter((c) => c.committed > 0);
   return (
-    <div className="h-64" role="img" aria-label={`Spend by category: ${slices.map((s) => `${s.label} ${inrShort(s.committed)}`).join("; ")}`}>
+    <div
+      className="h-64"
+      role="img"
+      aria-label={`Spend by category: ${slices.map((s) => `${s.label} ${inrShort(s.committed)}`).join("; ")}`}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie data={slices} dataKey="committed" nameKey="label" innerRadius={60} outerRadius={95} paddingAngle={2}>

@@ -2,19 +2,37 @@
 
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
-import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Circle, Group, Layer, Rect, Shape, Stage, Text, Transformer } from "react-konva";
-import { CATEGORY_STYLE, getDef, seatCount } from "@/lib/catalog/elements";
-import { localSeats, type SeatInfo, seatsForElement, type Box } from "@/lib/engine/geometry";
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Group, Layer, Rect, Shape, Stage, Text, Transformer } from "react-konva";
+import { getDef, seatCount } from "@/lib/catalog/elements";
+import { type Box, seatsForElement } from "@/lib/engine/geometry";
+import { clamp, roundHalf } from "@/lib/math";
 import type { PlacedElement, Zone } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { type BlueprintCanvasProps, PX, type SeatVisual } from "./types";
-
-const half = (v: number) => Math.round(v * 2) / 2;
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+import { ElementNode, type ItemApi } from "./element-node";
+import { type BlueprintCanvasProps, PX } from "./types";
 
 export default function BlueprintCanvas(props: BlueprintCanvasProps) {
-  const { layout, mode, selectedId, onSelect, onElementChange, onZoneChange, onDropKind, seatVisual, onSeatClick, warnIds, focusIds, showGrid = true, snap = 0.5, showZones = true, zoneDraw, onZoneDrawn, controls, className } = props;
+  const {
+    layout,
+    mode,
+    selectedId,
+    onSelect,
+    onElementChange,
+    onZoneChange,
+    onDropKind,
+    seatVisual,
+    onSeatClick,
+    warnIds,
+    focusIds,
+    showGrid = true,
+    snap = 0.5,
+    showZones = true,
+    zoneDraw,
+    onZoneDrawn,
+    controls,
+    className,
+  } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -25,7 +43,10 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
   const [draft, setDraft] = useState<Box | null>(null);
   const draftStart = useRef<{ x: number; y: number } | null>(null);
   const fittedKey = useRef("");
-  const font = useMemo(() => (typeof window === "undefined" ? "sans-serif" : getComputedStyle(document.body).fontFamily || "sans-serif"), []);
+  const font = useMemo(
+    () => (typeof window === "undefined" ? "sans-serif" : getComputedStyle(document.body).fontFamily || "sans-serif"),
+    [],
+  );
 
   const W = layout.venue.widthFt * PX;
   const H = layout.venue.lengthFt * PX;
@@ -127,7 +148,8 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
   const onStageUp = () => {
     if (!zoneDraw || !draftStart.current) return;
     draftStart.current = null;
-    if (draft && draft.w > 2 && draft.h > 2) onZoneDrawn?.({ x: half(draft.x), y: half(draft.y), w: half(draft.w), h: half(draft.h) });
+    if (draft && draft.w > 2 && draft.h > 2)
+      onZoneDrawn?.({ x: roundHalf(draft.x), y: roundHalf(draft.y), w: roundHalf(draft.w), h: roundHalf(draft.h) });
     setDraft(null);
   };
 
@@ -155,13 +177,19 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
 
   const onElementTransformEnd = (el: PlacedElement) => (e: KonvaEventObject<Event>) => {
     const n = e.target;
-    const w = Math.max(1, half(el.w * n.scaleX()));
-    const h = Math.max(1, half(el.h * n.scaleY()));
+    const w = Math.max(1, roundHalf(el.w * n.scaleX()));
+    const h = Math.max(1, roundHalf(el.h * n.scaleY()));
     n.scaleX(1);
     n.scaleY(1);
     const cx = n.x() / PX;
     const cy = n.y() / PX;
-    onElementChange?.(el.id, { w, h, x: half(cx - w / 2), y: half(cy - h / 2), rotation: ((Math.round(n.rotation()) % 360) + 360) % 360 });
+    onElementChange?.(el.id, {
+      w,
+      h,
+      x: roundHalf(cx - w / 2),
+      y: roundHalf(cy - h / 2),
+      rotation: ((Math.round(n.rotation()) % 360) + 360) % 360,
+    });
   };
 
   // Items are memoised; they get stable callbacks that always reach the latest handlers,
@@ -187,11 +215,11 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
 
   const onZoneTransformEnd = (z: Zone) => (e: KonvaEventObject<Event>) => {
     const n = e.target;
-    const w = Math.max(2, half((z.w * PX * n.scaleX()) / PX));
-    const h = Math.max(2, half((z.h * PX * n.scaleY()) / PX));
+    const w = Math.max(2, roundHalf((z.w * PX * n.scaleX()) / PX));
+    const h = Math.max(2, roundHalf((z.h * PX * n.scaleY()) / PX));
     n.scaleX(1);
     n.scaleY(1);
-    onZoneChange?.(z.id, { x: half(n.x() / PX), y: half(n.y() / PX), w, h });
+    onZoneChange?.(z.id, { x: roundHalf(n.x() / PX), y: roundHalf(n.y() / PX), w, h });
   };
 
   /** Grid lines every `step` ft; the minor grid skips lines the major grid draws. */
@@ -223,7 +251,9 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
 
   const tableCount = layout.elements.filter((e) => getDef(e.kind).category === "seating").length;
   const seatTotal = layout.elements.reduce((n, e) => n + seatCount(e.kind, e.w), 0);
-  const summary = `${layout.venue.name} blueprint, ${layout.venue.widthFt} by ${layout.venue.lengthFt} feet, ${tableCount} tables with ${seatTotal} seats and ${layout.elements.length - tableCount} other items.`;
+  const otherCount = layout.elements.length - tableCount;
+  const { venue } = layout;
+  const summary = `${venue.name} blueprint, ${venue.widthFt} by ${venue.lengthFt} feet, ${tableCount} tables with ${seatTotal} seats and ${otherCount} other items.`;
 
   return (
     <div
@@ -266,12 +296,55 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
           onTouchEnd={onStageUp}
         >
           <Layer>
-            <Rect name="floor" x={0} y={0} width={W} height={H} fill="#ffffff" cornerRadius={6} shadowColor="#78350f" shadowBlur={24} shadowOpacity={0.1} shadowOffsetY={6} />
+            <Rect
+              name="floor"
+              x={0}
+              y={0}
+              width={W}
+              height={H}
+              fill="#ffffff"
+              cornerRadius={6}
+              shadowColor="#78350f"
+              shadowBlur={24}
+              shadowOpacity={0.1}
+              shadowOffsetY={6}
+            />
             {showGrid && <Shape sceneFunc={gridMinor} stroke="#f3eee8" strokeWidth={1} strokeScaleEnabled={false} listening={false} />}
             {showGrid && <Shape sceneFunc={gridMajor} stroke="#e8dfd5" strokeWidth={1} strokeScaleEnabled={false} listening={false} />}
-            <Rect x={0} y={0} width={W} height={H} stroke="#a8a29e" strokeWidth={2} strokeScaleEnabled={false} cornerRadius={6} listening={false} />
-            <Text x={0} y={-22} width={W} align="center" text={`${layout.venue.widthFt} ft`} fontSize={13} fill="#a8a29e" fontFamily={font} listening={false} />
-            <Text x={-22} y={H} width={H} align="center" rotation={-90} text={`${layout.venue.lengthFt} ft`} fontSize={13} fill="#a8a29e" fontFamily={font} listening={false} />
+            <Rect
+              x={0}
+              y={0}
+              width={W}
+              height={H}
+              stroke="#a8a29e"
+              strokeWidth={2}
+              strokeScaleEnabled={false}
+              cornerRadius={6}
+              listening={false}
+            />
+            <Text
+              x={0}
+              y={-22}
+              width={W}
+              align="center"
+              text={`${layout.venue.widthFt} ft`}
+              fontSize={13}
+              fill="#a8a29e"
+              fontFamily={font}
+              listening={false}
+            />
+            <Text
+              x={-22}
+              y={H}
+              width={H}
+              align="center"
+              rotation={-90}
+              text={`${layout.venue.lengthFt} ft`}
+              fontSize={13}
+              fill="#a8a29e"
+              fontFamily={font}
+              listening={false}
+            />
           </Layer>
 
           {showZones && (
@@ -295,10 +368,20 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
                     draggable={editing && selectedZone?.id === z.id}
                     onClick={() => onSelect?.(z.id, "zone")}
                     onTap={() => onSelect?.(z.id, "zone")}
-                    onDragEnd={(e) => onZoneChange?.(z.id, { x: half(e.target.x() / PX), y: half(e.target.y() / PX) })}
+                    onDragEnd={(e) => onZoneChange?.(z.id, { x: roundHalf(e.target.x() / PX), y: roundHalf(e.target.y() / PX) })}
                     onTransformEnd={onZoneTransformEnd(z)}
                   />
-                  <Text x={z.x * PX + 6} y={z.y * PX + 5} text={z.name.toUpperCase()} fontSize={11} letterSpacing={1} fontStyle="bold" fill={z.color} fontFamily={font} listening={false} />
+                  <Text
+                    x={z.x * PX + 6}
+                    y={z.y * PX + 5}
+                    text={z.name.toUpperCase()}
+                    fontSize={11}
+                    letterSpacing={1}
+                    fontStyle="bold"
+                    fill={z.color}
+                    fontFamily={font}
+                    listening={false}
+                  />
                 </Group>
               ))}
             </Layer>
@@ -319,12 +402,26 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
                   listening={!zoneDraw}
                   seatsClickable={mode === "seats" && !!onSeatClick}
                   visuals={visuals}
-                  seatKey={visuals ? visuals.map((v) => `${v.fill}${v.stroke}${v.clickable === false ? 0 : 1}${v.tooltip ?? ""}`).join("|") : ""}
+                  seatKey={
+                    visuals ? visuals.map((v) => `${v.fill}${v.stroke}${v.clickable === false ? 0 : 1}${v.tooltip ?? ""}`).join("|") : ""
+                  }
                   api={itemApi}
                 />
               );
             })}
-            {draft && <Rect x={draft.x * PX} y={draft.y * PX} width={draft.w * PX} height={draft.h * PX} fill="#e11d48" opacity={0.12} stroke="#e11d48" dash={[6, 4]} strokeScaleEnabled={false} />}
+            {draft && (
+              <Rect
+                x={draft.x * PX}
+                y={draft.y * PX}
+                width={draft.w * PX}
+                height={draft.h * PX}
+                fill="#e11d48"
+                opacity={0.12}
+                stroke="#e11d48"
+                dash={[6, 4]}
+                strokeScaleEnabled={false}
+              />
+            )}
             {editing && (
               <Transformer
                 ref={trRef}
@@ -358,173 +455,13 @@ export default function BlueprintCanvas(props: BlueprintCanvasProps) {
         })}
       </ul>
       {tip && (
-        <div className="pointer-events-none absolute z-10 max-w-60 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-lg" style={{ left: tip.x, top: tip.y - 10 }}>
+        <div
+          className="pointer-events-none absolute z-10 max-w-60 -translate-x-1/2 -translate-y-full rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-lg"
+          style={{ left: tip.x, top: tip.y - 10 }}
+        >
           {tip.text}
         </div>
       )}
     </div>
-  );
-}
-
-interface ItemApi {
-  register: (id: string, n: Konva.Node | null) => void;
-  select: (id: string) => void;
-  dragEnd: (el: PlacedElement, e: KonvaEventObject<DragEvent>) => void;
-  transformEnd: (el: PlacedElement, e: KonvaEventObject<Event>) => void;
-  seatClick: (s: SeatInfo) => void;
-  hover: (text: string | null) => void;
-}
-
-interface ElementNodeProps {
-  el: PlacedElement;
-  font: string;
-  selected: boolean;
-  warn: boolean;
-  focus: boolean;
-  draggable: boolean;
-  listening: boolean;
-  seatsClickable: boolean;
-  visuals?: SeatVisual[];
-  /** Cheap signature of `visuals`, used by memo to skip unchanged items */
-  seatKey: string;
-  api: ItemApi;
-}
-
-const ElementNode = memo(ElementNodeImpl, (a, b) =>
-  a.el === b.el &&
-  a.font === b.font &&
-  a.selected === b.selected &&
-  a.warn === b.warn &&
-  a.focus === b.focus &&
-  a.draggable === b.draggable &&
-  a.listening === b.listening &&
-  a.seatsClickable === b.seatsClickable &&
-  a.seatKey === b.seatKey &&
-  a.api === b.api,
-);
-
-function ElementNodeImpl({ el, font, selected, warn, focus, draggable, listening, seatsClickable, visuals, api }: ElementNodeProps) {
-  const def = getDef(el.kind);
-  const style = CATEGORY_STYLE[def.category];
-  const w = el.w * PX;
-  const h = el.h * PX;
-  const seats = useMemo(() => (def.category === "seating" ? seatsForElement(el) : []), [el, def.category]);
-  const local = useMemo(() => localSeats(el.kind, el.w, el.h), [el.kind, el.w, el.h]);
-  const isTable = def.category === "seating";
-  const dark = el.kind === "pillar" || el.kind === "wall";
-  const fill = el.kind === "exit" ? "#16a34a" : el.kind === "entry" ? "#0ea5e9" : dark ? "#57534e" : style.fill;
-  const stroke = warn ? "#dc2626" : focus ? "#e11d48" : selected ? "#e11d48" : el.kind === "exit" ? "#15803d" : el.kind === "entry" ? "#0369a1" : dark ? "#44403c" : style.stroke;
-  const strokeWidth = warn || focus || selected ? 3 : 1.5;
-  const minSide = Math.min(w, h);
-  const seatsInteractive = seatsClickable;
-  const onSelect = () => api.select(el.id);
-
-  return (
-    <Group
-      ref={(n) => api.register(el.id, n)}
-      x={(el.x + el.w / 2) * PX}
-      y={(el.y + el.h / 2) * PX}
-      offsetX={w / 2}
-      offsetY={h / 2}
-      rotation={el.rotation}
-      draggable={draggable}
-      listening={listening}
-      onClick={onSelect}
-      onTap={onSelect}
-      onDragStart={onSelect}
-      onDragEnd={(e) => api.dragEnd(el, e)}
-      onTransformEnd={(e) => api.transformEnd(el, e)}
-      onMouseEnter={(e) => {
-        const c = e.target.getStage()?.container();
-        if (c && draggable) c.style.cursor = "move";
-      }}
-      onMouseLeave={(e) => {
-        const c = e.target.getStage()?.container();
-        if (c) c.style.cursor = "";
-      }}
-    >
-      {focus && <Rect x={-10} y={-10} width={w + 20} height={h + 20} cornerRadius={14} fill="#e11d48" opacity={0.12} listening={false} />}
-      {def.shape === "round" ? (
-        <Circle x={w / 2} y={h / 2} radius={w / 2} fill={fill} stroke={stroke} strokeWidth={strokeWidth} dash={warn ? [6, 4] : undefined} />
-      ) : (
-        <Rect
-          width={w}
-          height={h}
-          fill={fill}
-          stroke={stroke}
-          strokeWidth={strokeWidth}
-          cornerRadius={isTable ? 4 : dark ? 1 : 6}
-          dash={warn ? [6, 4] : el.kind === "dance-floor" || el.kind === "kids-zone" ? [10, 6] : undefined}
-          opacity={def.overlay ? 0.92 : 1}
-        />
-      )}
-      {el.kind === "dance-floor" && <Rect x={8} y={8} width={w - 16} height={h - 16} cornerRadius={4} fill="#ede9fe" opacity={0.6} listening={false} />}
-
-      {isTable ? (
-        <Text text={el.label} width={w} height={h} align="center" verticalAlign="middle" fontSize={clamp(minSide * 0.3, 9, 22)} fontStyle="bold" fill="#9a3412" fontFamily={font} listening={false} />
-      ) : el.kind === "exit" || el.kind === "entry" ? (
-        <Text
-          text={el.kind === "exit" ? "EXIT" : (el.label || "ENTRY").toUpperCase()}
-          width={w}
-          height={h}
-          align="center"
-          verticalAlign="middle"
-          fontSize={clamp(minSide * 0.45, 8, 13)}
-          fontStyle="bold"
-          fill="#ffffff"
-          fontFamily={font}
-          listening={false}
-          wrap="none"
-          ellipsis
-        />
-      ) : (
-        !dark && (
-          <>
-            {def.emoji && (
-              <Text text={def.emoji} width={w} y={minSide >= 50 ? h / 2 - clamp(minSide * 0.32, 10, 34) * 0.85 : 0} height={minSide >= 50 ? undefined : h} align="center" verticalAlign={minSide >= 50 ? "top" : "middle"} fontSize={clamp(minSide * 0.32, 10, 34)} listening={false} />
-            )}
-            {minSide >= 50 && (
-              <Text text={el.label} x={4} width={w - 8} y={h / 2 + 4} align="center" fontSize={clamp(minSide * 0.12, 9, 15)} fontStyle="600" fill="#44403c" fontFamily={font} listening={false} wrap="none" ellipsis />
-            )}
-          </>
-        )
-      )}
-
-      {seats.map((s, i) => {
-        const p = local[i];
-        const v = visuals?.[i];
-        return (
-          <Circle
-            key={s.id}
-            x={p.x * PX}
-            y={p.y * PX}
-            radius={0.85 * PX}
-            fill={v?.fill ?? "#f5f5f4"}
-            stroke={v?.stroke ?? "#a8a29e"}
-            strokeWidth={1}
-            perfectDrawEnabled={false}
-            listening={seatsInteractive}
-            onClick={(e) => {
-              e.cancelBubble = true;
-              if (v?.clickable !== false) api.seatClick(s);
-            }}
-            onTap={(e) => {
-              e.cancelBubble = true;
-              if (v?.clickable !== false) api.seatClick(s);
-            }}
-            onMouseEnter={(e) => {
-              const c = e.target.getStage()?.container();
-              if (c && v?.clickable !== false) c.style.cursor = "pointer";
-              api.hover(v?.tooltip ?? s.label);
-            }}
-            onMouseLeave={(e) => {
-              const c = e.target.getStage()?.container();
-              if (c) c.style.cursor = "";
-              api.hover(null);
-            }}
-          />
-        );
-      })}
-    </Group>
   );
 }

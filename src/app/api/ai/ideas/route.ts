@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { guard } from "@/lib/ai/guard";
-import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { plannerInstructions, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
 import { ideasRequest } from "@/lib/ai/requests";
 import { ideasSchema } from "@/lib/ai/schemas";
 
@@ -16,7 +16,10 @@ export async function POST(req: Request) {
       model: m.model,
       providerOptions: providerOptions(m),
       maxRetries: retriesFor(),
-      instructions: `${PLANNER_PERSONA}\nGenerate fresh, personalised ideas. Match regional cuisine to the city, respect the dietary mix, and keep favours within the per-guest budget.`,
+      instructions: plannerInstructions(
+        "Generate fresh, personalised ideas.",
+        "Match regional cuisine to the city, respect the dietary mix, and keep favours within the per-guest budget.",
+      ),
       prompt: [
         `Event: ${JSON.stringify(body.event)}`,
         `Dietary mix of attending guests: ${JSON.stringify(body.diet)}. Kids attending: ${body.kids}. Budget per guest: ₹${body.budgetPerHead}.`,

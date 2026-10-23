@@ -18,14 +18,81 @@ function rng(seed: number) {
   };
 }
 
-const FEMALE = ["Lakshmi", "Meena", "Kavya", "Divya", "Anitha", "Revathi", "Sowmya", "Priyanka", "Janani", "Deepa", "Nithya", "Swathi", "Harini", "Gayathri", "Shalini", "Aishwarya", "Keerthana", "Bhavani", "Pooja", "Sneha", "Radha", "Uma", "Vidya", "Ramya"];
-const MALE = ["Karthik", "Suresh", "Ramesh", "Vignesh", "Arun", "Prakash", "Senthil", "Gopal", "Rajesh", "Balaji", "Hari", "Naveen", "Ashwin", "Dinesh", "Mohan", "Vivek", "Siddharth", "Ganesh", "Kumar", "Ravi", "Anand", "Murali", "Shankar", "Varun"];
+const FEMALE = [
+  "Lakshmi",
+  "Meena",
+  "Kavya",
+  "Divya",
+  "Anitha",
+  "Revathi",
+  "Sowmya",
+  "Priyanka",
+  "Janani",
+  "Deepa",
+  "Nithya",
+  "Swathi",
+  "Harini",
+  "Gayathri",
+  "Shalini",
+  "Aishwarya",
+  "Keerthana",
+  "Bhavani",
+  "Pooja",
+  "Sneha",
+  "Radha",
+  "Uma",
+  "Vidya",
+  "Ramya",
+];
+const MALE = [
+  "Karthik",
+  "Suresh",
+  "Ramesh",
+  "Vignesh",
+  "Arun",
+  "Prakash",
+  "Senthil",
+  "Gopal",
+  "Rajesh",
+  "Balaji",
+  "Hari",
+  "Naveen",
+  "Ashwin",
+  "Dinesh",
+  "Mohan",
+  "Vivek",
+  "Siddharth",
+  "Ganesh",
+  "Kumar",
+  "Ravi",
+  "Anand",
+  "Murali",
+  "Shankar",
+  "Varun",
+];
 const KIDS = ["Aadhya", "Ishaan", "Diya", "Advik", "Tara", "Kabir", "Anika", "Vihaan", "Myra", "Aarav", "Saanvi", "Reyansh"];
-const SURNAMES = ["Iyer", "Subramanian", "Krishnan", "Venkatesh", "Raman", "Natarajan", "Menon", "Pillai", "Nair", "Reddy", "Rao", "Chandran", "Sharma", "Joseph", "Rajan", "Mani"];
+const SURNAMES = [
+  "Iyer",
+  "Subramanian",
+  "Krishnan",
+  "Venkatesh",
+  "Raman",
+  "Natarajan",
+  "Menon",
+  "Pillai",
+  "Nair",
+  "Reddy",
+  "Rao",
+  "Chandran",
+  "Sharma",
+  "Joseph",
+  "Rajan",
+  "Mani",
+];
 
 export function createDemoWedding(today = new Date()): EventPlan {
   const r = rng(42);
-  const pick = <T,>(arr: T[]) => arr[Math.floor(r() * arr.length)];
+  const pick = <T>(arr: T[]) => arr[Math.floor(r() * arr.length)];
   const date = shiftDate(toIsoDate(today), 50);
   const ev = createEventPlan(
     {
@@ -104,20 +171,106 @@ export function createDemoWedding(today = new Date()): EventPlan {
   ev.guests = guests;
 
   const vendors: Vendor[] = [
-    { id: nanoid(8), category: "venue", name: "Sree Mahal Banquets", contact: "+91 98430 11223", status: "booked", quote: 220000, paid: 110000, zoneIds: [], rating: 4.6 },
-    { id: nanoid(8), category: "catering", name: "Annapoorna Caterers", contact: "+91 98940 55110", status: "booked", quote: 125000, paid: 40000, zoneIds: [], rating: 4.8 },
-    { id: nanoid(8), category: "decor", name: "Kalyan Decors", contact: "+91 99440 20304", status: "booked", quote: 180000, paid: 60000, zoneIds: [], rating: 4.5, setupNotes: "Marigold drapes on stage, jasmine curtain, brass urli at entry." },
-    { id: nanoid(8), category: "photography", name: "Lens & Light Studio", contact: "+91 90030 77881", status: "booked", quote: 95000, paid: 30000, zoneIds: [], rating: 4.7 },
-    { id: nanoid(8), category: "dj", name: "DJ Vikram Beats", contact: "+91 97890 66554", status: "quoted", quote: 35000, paid: 0, zoneIds: [], rating: 4.3 },
-    { id: nanoid(8), category: "makeup", name: "Glam by Divya", contact: "+91 96000 12345", status: "booked", quote: 40000, paid: 10000, zoneIds: [], rating: 4.9 },
-    { id: nanoid(8), category: "bakery", name: "Sweet Truth Bakery", contact: "+91 95000 98765", status: "quoted", quote: 12000, paid: 0, zoneIds: [], rating: 4.4 },
-    { id: nanoid(8), category: "florist", name: "Sri Murugan Flowers", contact: "+91 94430 33221", status: "contacted", quote: 0, paid: 0, zoneIds: [], rating: 4.2 },
+    {
+      id: nanoid(8),
+      category: "venue",
+      name: "Sree Mahal Banquets",
+      contact: "+91 98430 11223",
+      status: "booked",
+      quote: 220000,
+      paid: 110000,
+      zoneIds: [],
+      rating: 4.6,
+    },
+    {
+      id: nanoid(8),
+      category: "catering",
+      name: "Annapoorna Caterers",
+      contact: "+91 98940 55110",
+      status: "booked",
+      quote: 125000,
+      paid: 40000,
+      zoneIds: [],
+      rating: 4.8,
+    },
+    {
+      id: nanoid(8),
+      category: "decor",
+      name: "Kalyan Decors",
+      contact: "+91 99440 20304",
+      status: "booked",
+      quote: 180000,
+      paid: 60000,
+      zoneIds: [],
+      rating: 4.5,
+      setupNotes: "Marigold drapes on stage, jasmine curtain, brass urli at entry.",
+    },
+    {
+      id: nanoid(8),
+      category: "photography",
+      name: "Lens & Light Studio",
+      contact: "+91 90030 77881",
+      status: "booked",
+      quote: 95000,
+      paid: 30000,
+      zoneIds: [],
+      rating: 4.7,
+    },
+    {
+      id: nanoid(8),
+      category: "dj",
+      name: "DJ Vikram Beats",
+      contact: "+91 97890 66554",
+      status: "quoted",
+      quote: 35000,
+      paid: 0,
+      zoneIds: [],
+      rating: 4.3,
+    },
+    {
+      id: nanoid(8),
+      category: "makeup",
+      name: "Glam by Divya",
+      contact: "+91 96000 12345",
+      status: "booked",
+      quote: 40000,
+      paid: 10000,
+      zoneIds: [],
+      rating: 4.9,
+    },
+    {
+      id: nanoid(8),
+      category: "bakery",
+      name: "Sweet Truth Bakery",
+      contact: "+91 95000 98765",
+      status: "quoted",
+      quote: 12000,
+      paid: 0,
+      zoneIds: [],
+      rating: 4.4,
+    },
+    {
+      id: nanoid(8),
+      category: "florist",
+      name: "Sri Murugan Flowers",
+      contact: "+91 94430 33221",
+      status: "contacted",
+      quote: 0,
+      paid: 0,
+      zoneIds: [],
+      rating: 4.2,
+    },
   ];
   ev.vendors = vendors;
 
   const layout = activeLayout(ev);
   const zoneOf = (kind: string) => layout.zones.find((z) => z.kind === kind)?.id;
-  const assign: Record<string, string | undefined> = { catering: zoneOf("service"), decor: zoneOf("ceremony"), dj: zoneOf("dance"), photography: zoneOf("ceremony") };
+  const assign: Record<string, string | undefined> = {
+    catering: zoneOf("service"),
+    decor: zoneOf("ceremony"),
+    dj: zoneOf("dance"),
+    photography: zoneOf("ceremony"),
+  };
   for (const v of vendors) {
     const z = assign[v.category];
     if (z) v.zoneIds = [z];
@@ -126,9 +279,33 @@ export function createDemoWedding(today = new Date()): EventPlan {
   ev.budget.lines = [
     { id: nanoid(8), category: "attire", label: "Bridal silk saree & groom's veshti", estimated: 150000, actual: 128000, paid: 128000 },
     { id: nanoid(8), category: "invitations", label: "Printed invitations & e-invite video", estimated: 25000, actual: 18000, paid: 18000 },
-    { id: nanoid(8), category: "gifts", label: "Return gifts (brass diyas)", estimated: 30000, actual: 0, paid: 0, dueDate: shiftDate(date, -12) },
-    { id: nanoid(8), category: "logistics", label: "Guest transport from Madurai", estimated: 22000, actual: 0, paid: 0, dueDate: shiftDate(date, -5) },
-    { id: nanoid(8), category: "misc", label: "Priest dakshina & pooja items", estimated: 15000, actual: 0, paid: 0, dueDate: shiftDate(date, -2) },
+    {
+      id: nanoid(8),
+      category: "gifts",
+      label: "Return gifts (brass diyas)",
+      estimated: 30000,
+      actual: 0,
+      paid: 0,
+      dueDate: shiftDate(date, -12),
+    },
+    {
+      id: nanoid(8),
+      category: "logistics",
+      label: "Guest transport from Madurai",
+      estimated: 22000,
+      actual: 0,
+      paid: 0,
+      dueDate: shiftDate(date, -5),
+    },
+    {
+      id: nanoid(8),
+      category: "misc",
+      label: "Priest dakshina & pooja items",
+      estimated: 15000,
+      actual: 0,
+      paid: 0,
+      dueDate: shiftDate(date, -2),
+    },
   ];
 
   ev.schedule = generateSchedule(ev, layout);
@@ -166,7 +343,16 @@ export function createDemoCommunity(today = new Date()): EventPlan {
   ev.vendors = [
     { id: nanoid(8), category: "av", name: "SoundWave Events", status: "booked", quote: 45000, paid: 20000, zoneIds: [], rating: 4.5 },
     { id: nanoid(8), category: "catering", name: "Kovai Tiffin Co.", status: "quoted", quote: 96000, paid: 0, zoneIds: [], rating: 4.6 },
-    { id: nanoid(8), category: "rentals", name: "Shanthi Tent House", status: "booked", quote: 38000, paid: 15000, zoneIds: [], rating: 4.1 },
+    {
+      id: nanoid(8),
+      category: "rentals",
+      name: "Shanthi Tent House",
+      status: "booked",
+      quote: 38000,
+      paid: 15000,
+      zoneIds: [],
+      rating: 4.1,
+    },
     { id: nanoid(8), category: "emcee", name: "Anchor Meera", status: "contacted", quote: 0, paid: 0, zoneIds: [], rating: 4.8 },
   ];
   ev.schedule = generateSchedule(ev, activeLayout(ev));
@@ -183,7 +369,14 @@ export function createDemoCommunity(today = new Date()): EventPlan {
     const s = seats[Math.floor(r() * Math.min(seats.length, 140))];
     if (taken.has(s.id)) continue;
     taken.add(s.id);
-    ev.bookings.push({ id: nanoid(8), seatId: s.id, layoutId: layout.id, name: `${names[i % names.length]} (Block ${String.fromCharCode(65 + (i % 5))})`, passType: vip.has(s.id) ? "vip" : "general", createdAt: new Date().toISOString() });
+    ev.bookings.push({
+      id: nanoid(8),
+      seatId: s.id,
+      layoutId: layout.id,
+      name: `${names[i % names.length]} (Block ${String.fromCharCode(65 + (i % 5))})`,
+      passType: vip.has(s.id) ? "vip" : "general",
+      createdAt: new Date().toISOString(),
+    });
   }
   return ev;
 }

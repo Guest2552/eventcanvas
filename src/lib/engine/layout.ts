@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { chairRing, getDef, seatCount, TABLE_KINDS, type TableKind } from "@/lib/catalog/elements";
 import { ZONE_KINDS } from "@/lib/catalog/planning";
+import { clamp, roundHalf } from "@/lib/math";
 import type { Fixture } from "@/lib/catalog/templates";
 import type { EventType, Layout, PlacedElement, Venue, Zone, ZoneKind } from "@/lib/types";
 import { aabb, type Box, center, defaultLabel, dist, footprint, inflate, intersects, type Point } from "./geometry";
@@ -32,11 +33,12 @@ export function defaultIntent(type: EventType, guestCount: number, indoor = true
 export function sanitizeIntent(raw: Partial<LayoutIntent> | undefined, fallback: LayoutIntent): LayoutIntent {
   const tableKind = TABLE_KINDS.includes(raw?.tableKind as TableKind) ? (raw!.tableKind as TableKind) : fallback.tableKind;
   const include = (raw?.include ?? fallback.include).filter((k) => getDef(k).label !== k && getDef(k).category !== "seating");
-  return { tableKind, include: include.length ? include : fallback.include, vipRows: Math.max(0, Math.min(3, raw?.vipRows ?? fallback.vipRows)) };
+  return {
+    tableKind,
+    include: include.length ? include : fallback.include,
+    vipRows: Math.max(0, Math.min(3, raw?.vipRows ?? fallback.vipRows)),
+  };
 }
-
-const round1 = (v: number) => Math.round(v * 2) / 2;
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 interface Builder {
   venue: Venue;
@@ -49,7 +51,16 @@ function asLayout(b: Builder): Layout {
 
 function make(b: Builder, kind: string, x: number, y: number, w?: number, h?: number, label?: string): PlacedElement {
   const def = getDef(kind);
-  return { id: nanoid(8), kind, x: round1(x), y: round1(y), w: w ?? def.w, h: h ?? def.h, rotation: 0, label: label ?? defaultLabel(asLayout(b), kind) };
+  return {
+    id: nanoid(8),
+    kind,
+    x: roundHalf(x),
+    y: roundHalf(y),
+    w: w ?? def.w,
+    h: h ?? def.h,
+    rotation: 0,
+    label: label ?? defaultLabel(asLayout(b), kind),
+  };
 }
 
 const isDoor = (e: PlacedElement) => !!(getDef(e.kind).isEntry || getDef(e.kind).isExit);
@@ -104,7 +115,11 @@ function placeBest(b: Builder, kind: string, score: (c: Point) => number, opts: 
 }
 
 /** Public helper for the editor and AI tools: free spot closest to `near`, or furthest from `awayFrom`. */
-export function findFreeSpot(layout: Layout, kind: string, opts: { near?: Point; awayFrom?: Point; w?: number; h?: number; ignoreId?: string } = {}): Point | null {
+export function findFreeSpot(
+  layout: Layout,
+  kind: string,
+  opts: { near?: Point; awayFrom?: Point; w?: number; h?: number; ignoreId?: string } = {},
+): Point | null {
   const b: Builder = { venue: layout.venue, els: layout.elements.filter((e) => e.id !== opts.ignoreId) };
   const target = opts.near ?? { x: layout.venue.widthFt / 2, y: layout.venue.lengthFt / 2 };
   const score = opts.awayFrom ? (c: Point) => -dist(c, opts.awayFrom!) : (c: Point) => dist(c, target);
@@ -159,7 +174,16 @@ function packSeating(b: Builder, kind: string, needed: number, anchor: Point, mi
 }
 
 function zone(kind: ZoneKind, name: string, box: Box): Zone {
-  return { id: nanoid(8), kind, name, color: ZONE_KINDS[kind].color, x: round1(box.x), y: round1(box.y), w: round1(box.w), h: round1(box.h) };
+  return {
+    id: nanoid(8),
+    kind,
+    name,
+    color: ZONE_KINDS[kind].color,
+    x: roundHalf(box.x),
+    y: roundHalf(box.y),
+    w: roundHalf(box.w),
+    h: roundHalf(box.h),
+  };
 }
 
 function bbox(boxes: Box[]): Box {
@@ -177,7 +201,21 @@ export function fixturesToElements(venue: Venue, fixtures: Fixture[]): PlacedEle
 }
 
 /** Items dropped first when a small venue can't seat everyone. */
-const OPTIONAL = ["kids-zone", "photo-booth", "bar", "sofa", "gift-table", "dj-booth", "dance-floor", "cake-table", "registration", "led-screen", "buffet", "stage", "mandap"];
+const OPTIONAL = [
+  "kids-zone",
+  "photo-booth",
+  "bar",
+  "sofa",
+  "gift-table",
+  "dj-booth",
+  "dance-floor",
+  "cake-table",
+  "registration",
+  "led-screen",
+  "buffet",
+  "stage",
+  "mandap",
+];
 
 function attempt(venue: Venue, fixtures: PlacedElement[], guestCount: number, intent: LayoutIntent) {
   const W = venue.widthFt;
@@ -195,7 +233,8 @@ function attempt(venue: Venue, fixtures: PlacedElement[], guestCount: number, in
     const h = Math.round(clamp(focalKind === "mandap" ? w : w * 0.45, 5, Math.min(def.h, H * 0.18)));
     focal = placeBest(b, focalKind, (c) => dist(c, { x: W / 2, y: 0 }), { w, h });
   }
-  if (focal && has("mandap") && has("stage")) placeBest(b, "stage", (c) => dist(c, { x: W / 2, y: 0 }) + (c.y > focal!.y + focal!.h ? 50 : 0));
+  if (focal && has("mandap") && has("stage"))
+    placeBest(b, "stage", (c) => dist(c, { x: W / 2, y: 0 }) + (c.y > focal!.y + focal!.h ? 50 : 0));
   const fb = focal ? aabb(focal) : { x: W / 2 - 5, y: 0, w: 10, h: 2 };
 
   if (focal && has("led-screen")) b.els.push(make(b, "led-screen", fb.x + fb.w / 2 - 6, fb.y + 0.5));
@@ -269,7 +308,8 @@ function attempt(venue: Venue, fixtures: PlacedElement[], guestCount: number, in
   }
   const kids = b.els.find((e) => e.kind === "kids-zone");
   if (kids) zones.push(zone("kids", "Kids corner", inflate(aabb(kids), 1)));
-  for (const f of b.els.filter((e) => e.kind === "buffet" || e.kind === "bar")) zones.push(zone("service", f.kind === "bar" ? "Bar" : "Food court", inflate(aabb(f), 2)));
+  for (const f of b.els.filter((e) => e.kind === "buffet" || e.kind === "bar"))
+    zones.push(zone("service", f.kind === "bar" ? "Bar" : "Food court", inflate(aabb(f), 2)));
 
   return { elements: b.els, zones, seats, needed };
 }

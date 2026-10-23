@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { parsePrompt } from "@/lib/engine/offline";
 import { guard } from "@/lib/ai/guard";
-import { PLANNER_PERSONA, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
+import { plannerInstructions, providerOptions, cacheKey, retriesFor, withCachedFallback } from "@/lib/ai/provider";
 import { planRequest } from "@/lib/ai/requests";
 import { planSchema } from "@/lib/ai/schemas";
 
@@ -20,7 +20,11 @@ export async function POST(req: Request) {
       model: m.model,
       providerOptions: providerOptions(m),
       maxRetries: retriesFor(),
-      instructions: `${PLANNER_PERSONA}\nToday is ${todayIso}. Turn the host's one-line brief into a complete starter plan. Keep the host's stated facts exactly (guest count, city, budget, date). Infer sensible defaults for everything else, but never invent people's names.`,
+      instructions: plannerInstructions(
+        `Today is ${todayIso}. Turn the host's one-line brief into a complete starter plan.`,
+        "Keep the host's stated facts exactly (guest count, city, budget, date).",
+        "Infer sensible defaults for everything else, but never invent people's names.",
+      ),
       prompt: `Brief: """${brief}"""`,
       output: Output.object({ schema: planSchema }),
     });

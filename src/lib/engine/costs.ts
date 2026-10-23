@@ -68,7 +68,15 @@ export function budgetSummary(ev: EventPlan, today = new Date()) {
   const map = new Map<BudgetCategory, CategorySummary>(
     cats.map((c) => [
       c,
-      { category: c, label: BUDGET_CATEGORIES[c].label, color: BUDGET_CATEGORIES[c].color, allocated: ev.budget.allocations[c] ?? 0, committed: 0, actual: 0, paid: 0 },
+      {
+        category: c,
+        label: BUDGET_CATEGORIES[c].label,
+        color: BUDGET_CATEGORIES[c].color,
+        allocated: ev.budget.allocations[c] ?? 0,
+        committed: 0,
+        actual: 0,
+        paid: 0,
+      },
     ]),
   );
 
@@ -106,13 +114,21 @@ export function budgetSummary(ev: EventPlan, today = new Date()) {
   const todayIso = today.toISOString().slice(0, 10);
   for (const line of ev.budget.lines) {
     const owed = Math.max(line.estimated, line.actual) - line.paid;
-    if (line.dueDate && owed > 0) dues.push({ id: line.id, label: line.label, amount: owed, dueDate: line.dueDate, overdue: line.dueDate < todayIso, source: "line" });
+    if (line.dueDate && owed > 0)
+      dues.push({ id: line.id, label: line.label, amount: owed, dueDate: line.dueDate, overdue: line.dueDate < todayIso, source: "line" });
   }
   const vendorDue = shiftDate(ev.date, -7);
   for (const v of ev.vendors) {
     const owed = v.quote - v.paid;
     if (BOOKED_STATUSES.includes(v.status) && owed > 0)
-      dues.push({ id: v.id, label: `${v.name} (balance)`, amount: owed, dueDate: vendorDue, overdue: vendorDue < todayIso, source: "vendor" });
+      dues.push({
+        id: v.id,
+        label: `${v.name} (balance)`,
+        amount: owed,
+        dueDate: vendorDue,
+        overdue: vendorDue < todayIso,
+        source: "vendor",
+      });
   }
   dues.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 

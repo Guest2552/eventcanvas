@@ -53,6 +53,11 @@ export function dist(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+/** True when point `p` lies inside box `b` (edges included). */
+export function inBox(p: Point, b: Box) {
+  return p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+}
+
 export function insideVenue(b: Box, layout: Layout, tolerance = 0.5) {
   const v = layout.venue;
   return b.x >= -tolerance && b.y >= -tolerance && b.x + b.w <= v.widthFt + tolerance && b.y + b.h <= v.lengthFt + tolerance;
@@ -120,6 +125,11 @@ export function seatsForElement(el: PlacedElement): SeatInfo[] {
       y: c.y + dx * sin + dy * cos,
     };
   });
+}
+
+/** Short human seat code such as "T4-3", used on tickets, badges and pickers. */
+export function seatCode(seat: Pick<SeatInfo, "tableLabel" | "index">) {
+  return `${seat.tableLabel}-${seat.index + 1}`;
 }
 
 export function allSeats(layout: Layout): SeatInfo[] {

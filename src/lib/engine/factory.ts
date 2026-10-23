@@ -22,7 +22,13 @@ export interface NewEventInput {
   perPlate?: number;
 }
 
-export function buildLayout(opts: { templateId?: string; name?: string; guestCount: number; type: EventType; intent?: Partial<LayoutIntent> }): Layout {
+export function buildLayout(opts: {
+  templateId?: string;
+  name?: string;
+  guestCount: number;
+  type: EventType;
+  intent?: Partial<LayoutIntent>;
+}): Layout {
   const template = opts.templateId ? getTemplate(opts.templateId) : suggestTemplate(opts.guestCount, opts.type);
   const venue = { ...template.venue };
   const fixtures = fixturesToElements(venue, template.fixtures);

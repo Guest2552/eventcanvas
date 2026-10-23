@@ -24,12 +24,32 @@ const EXAMPLES = [
 ];
 
 const FEATURES = [
-  { icon: LayoutGrid, title: "Venue blueprint", text: "Drag stages, tables and buffets onto a real-scale floor plan, like a seat map for your own event." },
-  { icon: Users, title: "Smart seating", text: "Families stay together, elders sit near exits, VIPs up front. Click any seat to assign a guest." },
+  {
+    icon: LayoutGrid,
+    title: "Venue blueprint",
+    text: "Drag stages, tables and buffets onto a real-scale floor plan, like a seat map for your own event.",
+  },
+  {
+    icon: Users,
+    title: "Smart seating",
+    text: "Families stay together, elders sit near exits, VIPs up front. Click any seat to assign a guest.",
+  },
   { icon: Wallet, title: "Linked budget", text: "Every table you place and every guest you add updates the budget instantly." },
-  { icon: CalendarClock, title: "Timeline & run-of-show", text: "A countdown of tasks, plus a minute-by-minute schedule tied to blueprint zones." },
-  { icon: Store, title: "Vendor checklist", text: "Place a DJ booth and the DJ vendor appears on your checklist. Track quotes to delivery." },
-  { icon: Sparkles, title: "AI co-planner", text: "Ask it to move the DJ away from the elders or add a photo booth, and it edits the plan for you." },
+  {
+    icon: CalendarClock,
+    title: "Timeline & run-of-show",
+    text: "A countdown of tasks, plus a minute-by-minute schedule tied to blueprint zones.",
+  },
+  {
+    icon: Store,
+    title: "Vendor checklist",
+    text: "Place a DJ booth and the DJ vendor appears on your checklist. Track quotes to delivery.",
+  },
+  {
+    icon: Sparkles,
+    title: "AI co-planner",
+    text: "Ask it to move the DJ away from the elders or add a photo booth, and it edits the plan for you.",
+  },
 ];
 
 export default function Home() {
@@ -42,7 +62,9 @@ export default function Home() {
   const list = Object.values(events).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
   const openDemo = (kind: "wedding" | "community") => {
-    const existing = list.find((e) => e.name === (kind === "wedding" ? "Priya & Arjun's Wedding Reception" : "Coimbatore Diwali Cultural Night"));
+    const existing = list.find(
+      (e) => e.name === (kind === "wedding" ? "Priya & Arjun's Wedding Reception" : "Coimbatore Diwali Cultural Night"),
+    );
     if (existing) return router.push(`/e/${existing.id}`);
     const ev = kind === "wedding" ? createDemoWedding() : createDemoCommunity();
     addEvent(ev);
@@ -80,7 +102,8 @@ export default function Home() {
               Plan the celebration on a <span className="text-primary italic">living blueprint.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Lay out your venue like a theatre seat map. Budget, timeline, vendors and seating all update as you plan, and an AI co-planner can make changes for you.
+              Lay out your venue like a theatre seat map. Budget, timeline, vendors and seating all update as you plan, and an AI co-planner
+              can make changes for you.
             </p>
 
             <div className="mt-7 rounded-2xl border bg-card p-3 shadow-sm">
@@ -100,7 +123,11 @@ export default function Home() {
               <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                 <div className="flex flex-wrap gap-1.5">
                   {EXAMPLES.slice(0, 2).map((ex) => (
-                    <button key={ex} onClick={() => setPrompt(ex)} className="rounded-full border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground">
+                    <button
+                      key={ex}
+                      onClick={() => setPrompt(ex)}
+                      className="rounded-full border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+                    >
                       {ex.length > 46 ? `${ex.slice(0, 46)}…` : ex}
                     </button>
                   ))}
@@ -131,7 +158,10 @@ export default function Home() {
               {list.map((ev) => {
                 const d = daysUntil(ev.date);
                 return (
-                  <div key={ev.id} className="group relative rounded-2xl border bg-card p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md">
+                  <div
+                    key={ev.id}
+                    className="group relative rounded-2xl border bg-card p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md"
+                  >
                     <Link href={`/e/${ev.id}`} className="absolute inset-0 rounded-2xl" aria-label={`Open ${ev.name}`} />
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-3xl">{EVENT_TYPES[ev.type].emoji}</span>
@@ -184,15 +214,28 @@ export default function Home() {
 /** Decorative seat-map illustration for the hero. */
 function HeroBlueprint() {
   const tables = [
-    [70, 150], [150, 150], [290, 150], [370, 150],
-    [70, 235], [150, 235], [290, 235], [370, 235],
-    [110, 320], [220, 320], [330, 320],
+    [70, 150],
+    [150, 150],
+    [290, 150],
+    [370, 150],
+    [70, 235],
+    [150, 235],
+    [290, 235],
+    [370, 235],
+    [110, 320],
+    [220, 320],
+    [330, 320],
   ];
   const colors = ["#e11d48", "#fb7185", "#f59e0b", "#ffffff", "#38bdf8"];
   return (
     <div className="relative mx-auto w-full max-w-lg">
       <div className="absolute -inset-4 rotate-2 rounded-[2rem] bg-marigold/25" />
-      <svg viewBox="0 0 440 400" className="relative w-full rounded-[1.5rem] border bg-card shadow-xl" role="img" aria-label="Example venue blueprint with stage, dance floor and round tables">
+      <svg
+        viewBox="0 0 440 400"
+        className="relative w-full rounded-[1.5rem] border bg-card shadow-xl"
+        role="img"
+        aria-label="Example venue blueprint with stage, dance floor and round tables"
+      >
         <defs>
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M20 0H0V20" fill="none" stroke="#f1ebe4" strokeWidth="1" />
@@ -200,19 +243,35 @@ function HeroBlueprint() {
         </defs>
         <rect x="10" y="10" width="420" height="380" rx="16" fill="url(#grid)" stroke="#e7ddd2" />
         <rect x="140" y="28" width="160" height="56" rx="8" fill="#fdf2f8" stroke="#db2777" strokeWidth="2" />
-        <text x="220" y="62" textAnchor="middle" fontSize="15" fontWeight="600" fill="#9d174d">🎤 Stage</text>
+        <text x="220" y="62" textAnchor="middle" fontSize="15" fontWeight="600" fill="#9d174d">
+          🎤 Stage
+        </text>
         <rect x="190" y="185" width="60" height="60" rx="6" fill="#f5f3ff" stroke="#7c3aed" strokeWidth="2" strokeDasharray="4 3" />
-        <text x="220" y="220" textAnchor="middle" fontSize="18">💃</text>
+        <text x="220" y="220" textAnchor="middle" fontSize="18">
+          💃
+        </text>
         <rect x="22" y="110" width="20" height="120" rx="4" fill="#f7fee7" stroke="#65a30d" strokeWidth="2" />
         <rect x="190" y="372" width="60" height="12" rx="3" fill="#f0f9ff" stroke="#0284c7" strokeWidth="2" />
         <rect x="40" y="128" width="140" height="44" rx="10" fill="#eab308" opacity="0.12" stroke="#eab308" strokeDasharray="5 4" />
         {tables.map(([cx, cy], t) => (
           <g key={t}>
             <circle cx={cx} cy={cy} r="20" fill="#fff7ed" stroke="#ea580c" strokeWidth="2" />
-            <text x={cx} y={cy + 4} textAnchor="middle" fontSize="10" fontWeight="600" fill="#9a3412">T{t + 1}</text>
+            <text x={cx} y={cy + 4} textAnchor="middle" fontSize="10" fontWeight="600" fill="#9a3412">
+              T{t + 1}
+            </text>
             {Array.from({ length: 8 }, (_, i) => {
               const a = (i / 8) * Math.PI * 2;
-              return <circle key={i} cx={cx + Math.cos(a) * 30} cy={cy + Math.sin(a) * 30} r="5.5" fill={colors[(t * 3 + i) % colors.length]} stroke="#a8a29e" strokeWidth="1" />;
+              return (
+                <circle
+                  key={i}
+                  cx={cx + Math.cos(a) * 30}
+                  cy={cy + Math.sin(a) * 30}
+                  r="5.5"
+                  fill={colors[(t * 3 + i) % colors.length]}
+                  stroke="#a8a29e"
+                  strokeWidth="1"
+                />
+              );
             })}
           </g>
         ))}

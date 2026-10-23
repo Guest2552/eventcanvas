@@ -34,5 +34,8 @@ export async function POST(req: Request) {
     ].join("\n"),
   });
 
-  return createTextStreamResponse({ stream: toTextStream({ stream: result.stream }), headers: { "x-ai-source": "ai", "x-ai-model": model.label } });
+  return createTextStreamResponse({
+    stream: toTextStream({ stream: result.stream }),
+    headers: { "x-ai-source": "ai", "x-ai-model": model.label },
+  });
 }

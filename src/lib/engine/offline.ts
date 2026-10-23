@@ -60,12 +60,16 @@ export function parsePrompt(text: string, today = new Date()): NewEventInput {
   }
 
   const themeMatch = t.match(/([\w&' -]{3,30}?)\s+theme/i) ?? t.match(/theme[d]?\s*(?:of|:|is)?\s*([\w&' -]{3,30})/i);
-  const theme = themeMatch ? titleCase(themeMatch[1].trim()) : { wedding: "Marigold & Ivory", birthday: "Confetti Pop", community: "Festival of Lights", corporate: "Modern Minimal" }[type];
+  const theme = themeMatch
+    ? titleCase(themeMatch[1].trim())
+    : { wedding: "Marigold & Ivory", birthday: "Confetti Pop", community: "Festival of Lights", corporate: "Modern Minimal" }[type];
 
   const who = t.match(/\b([A-Z][a-z]+(?:\s*(?:&|and)\s*[A-Z][a-z]+)?)'s\b/);
   const age = t.match(/(\d{1,3})(?:st|nd|rd|th)\s*(?:birthday|bday)/i) ?? t.match(/turning\s+(\d{1,3})/i);
   const label = EVENT_TYPES[type].label;
-  const name = who ? `${who[1]}'s ${age ? `${age[1]}${ordinal(Number(age[1]))} ` : ""}${label}` : `${age ? `${age[1]}${ordinal(Number(age[1]))} ` : ""}${label} in ${city}`;
+  const name = who
+    ? `${who[1]}'s ${age ? `${age[1]}${ordinal(Number(age[1]))} ` : ""}${label}`
+    : `${age ? `${age[1]}${ordinal(Number(age[1]))} ` : ""}${label} in ${city}`;
 
   const outdoor = /outdoor|lawn|garden|beach|terrace|open.?air|farm/i.test(t);
   const startTime = /morning|muhurtham|breakfast/i.test(t) ? "09:00" : /lunch|afternoon/i.test(t) ? "12:30" : "18:00";
@@ -99,28 +103,85 @@ function ordinal(n: number) {
 const IDEAS: Record<EventType, Omit<IdeaPack, "source" | "menu">> = {
   wedding: {
     themes: [
-      { name: "Marigold & Ivory", description: "Classic South Indian warmth with jasmine strings, brass urli and marigold drapes.", palette: ["#f59e0b", "#fff7ed", "#b45309", "#166534", "#fde68a"], decor: ["Marigold torans at entry", "Brass urli with floating flowers", "Banana-leaf place mats", "Jasmine curtains behind the stage"] },
-      { name: "Royal Temple", description: "Kanjeevaram-inspired maroon and gold with temple bells and kolam art.", palette: ["#7f1d1d", "#ca8a04", "#fef3c7", "#1c1917", "#b91c1c"], decor: ["Kolam rangoli at entry", "Temple bell hangings", "Silk drapes in maroon and gold", "Diya-lit aisle"] },
-      { name: "Pastel Garden", description: "Soft blush and sage with fairy lights, perfect for an evening reception.", palette: ["#fbcfe8", "#d9f99d", "#fef9c3", "#a7f3d0", "#f5f5f4"], decor: ["Floral arch photo spot", "Fairy-light canopy", "Pastel table runners", "Hanging terrariums"] },
+      {
+        name: "Marigold & Ivory",
+        description: "Classic South Indian warmth with jasmine strings, brass urli and marigold drapes.",
+        palette: ["#f59e0b", "#fff7ed", "#b45309", "#166534", "#fde68a"],
+        decor: [
+          "Marigold torans at entry",
+          "Brass urli with floating flowers",
+          "Banana-leaf place mats",
+          "Jasmine curtains behind the stage",
+        ],
+      },
+      {
+        name: "Royal Temple",
+        description: "Kanjeevaram-inspired maroon and gold with temple bells and kolam art.",
+        palette: ["#7f1d1d", "#ca8a04", "#fef3c7", "#1c1917", "#b91c1c"],
+        decor: ["Kolam rangoli at entry", "Temple bell hangings", "Silk drapes in maroon and gold", "Diya-lit aisle"],
+      },
+      {
+        name: "Pastel Garden",
+        description: "Soft blush and sage with fairy lights, perfect for an evening reception.",
+        palette: ["#fbcfe8", "#d9f99d", "#fef9c3", "#a7f3d0", "#f5f5f4"],
+        decor: ["Floral arch photo spot", "Fairy-light canopy", "Pastel table runners", "Hanging terrariums"],
+      },
     ],
     activities: [
-      { title: "Couple trivia on screen", description: "Guests answer fun questions about the couple via QR code; winners get a sweet box.", audience: "Everyone" },
+      {
+        title: "Couple trivia on screen",
+        description: "Guests answer fun questions about the couple via QR code; winners get a sweet box.",
+        audience: "Everyone",
+      },
       { title: "Family dance-off", description: "Bride side vs groom side sangeet-style dance battle.", audience: "Families" },
-      { title: "Blessing jar", description: "Guests drop handwritten wishes into a brass jar for the couple to read later.", audience: "Elders" },
+      {
+        title: "Blessing jar",
+        description: "Guests drop handwritten wishes into a brass jar for the couple to read later.",
+        audience: "Elders",
+      },
       { title: "Kids craft corner", description: "Mehendi-cone painting and paper garland making.", audience: "Kids" },
     ],
-    favors: ["Mini brass diya", "Silk pouch with dry fruits", "Seed paper thank-you card", "Jasmine gajra for women guests", "Personalised sweet box"],
+    favors: [
+      "Mini brass diya",
+      "Silk pouch with dry fruits",
+      "Seed paper thank-you card",
+      "Jasmine gajra for women guests",
+      "Personalised sweet box",
+    ],
     hashtags: ["#ForeverStartsHere", "#TwoHeartsOneSoul", "#KalyanamDiaries", "#BigFatTamilWedding"],
   },
   birthday: {
     themes: [
-      { name: "Confetti Pop", description: "Bright, playful colours with balloon garlands and a confetti cannon moment.", palette: ["#f43f5e", "#facc15", "#22d3ee", "#a855f7", "#ffffff"], decor: ["Balloon arch at stage", "Confetti table toppers", "Neon name sign", "Polaroid wall"] },
-      { name: "Retro Bollywood", description: "Old-school film posters, disco ball and filmy dialogues.", palette: ["#dc2626", "#fbbf24", "#111827", "#f5f5f4", "#9333ea"], decor: ["Movie-poster backdrop", "Filmy dialogue placards", "Disco ball over dance floor", "Popcorn cart"] },
-      { name: "Under the Stars", description: "Navy and gold night-sky theme with fairy lights.", palette: ["#1e3a8a", "#facc15", "#f8fafc", "#312e81", "#94a3b8"], decor: ["Star-light ceiling", "Moon backdrop", "Gold cutlery", "Lantern centrepieces"] },
+      {
+        name: "Confetti Pop",
+        description: "Bright, playful colours with balloon garlands and a confetti cannon moment.",
+        palette: ["#f43f5e", "#facc15", "#22d3ee", "#a855f7", "#ffffff"],
+        decor: ["Balloon arch at stage", "Confetti table toppers", "Neon name sign", "Polaroid wall"],
+      },
+      {
+        name: "Retro Bollywood",
+        description: "Old-school film posters, disco ball and filmy dialogues.",
+        palette: ["#dc2626", "#fbbf24", "#111827", "#f5f5f4", "#9333ea"],
+        decor: ["Movie-poster backdrop", "Filmy dialogue placards", "Disco ball over dance floor", "Popcorn cart"],
+      },
+      {
+        name: "Under the Stars",
+        description: "Navy and gold night-sky theme with fairy lights.",
+        palette: ["#1e3a8a", "#facc15", "#f8fafc", "#312e81", "#94a3b8"],
+        decor: ["Star-light ceiling", "Moon backdrop", "Gold cutlery", "Lantern centrepieces"],
+      },
     ],
     activities: [
-      { title: "Treasure hunt", description: "Clues hidden around the venue blueprint zones; winners get the first slice of cake.", audience: "Kids" },
-      { title: "Memory lane slideshow", description: "Photos from every year of the birthday person's life on the LED screen.", audience: "Everyone" },
+      {
+        title: "Treasure hunt",
+        description: "Clues hidden around the venue blueprint zones; winners get the first slice of cake.",
+        audience: "Kids",
+      },
+      {
+        title: "Memory lane slideshow",
+        description: "Photos from every year of the birthday person's life on the LED screen.",
+        audience: "Everyone",
+      },
       { title: "Musical chairs", description: "The classic, with a filmy-songs playlist.", audience: "Kids & adults" },
       { title: "Wish wall", description: "Sticky-note wishes on a big board, turned into a keepsake album.", audience: "Everyone" },
     ],
@@ -129,9 +190,24 @@ const IDEAS: Record<EventType, Omit<IdeaPack, "source" | "menu">> = {
   },
   community: {
     themes: [
-      { name: "Festival of Lights", description: "Diyas, lanterns and rangoli for a warm festive evening.", palette: ["#f97316", "#facc15", "#7c2d12", "#fef3c7", "#be123c"], decor: ["Diya pathways", "Paper lantern ceiling", "Community rangoli contest area", "Marigold stage backdrop"] },
-      { name: "Harvest Mela", description: "Pongal / Onam style earthy decor with sugarcane, banana leaves and clay pots.", palette: ["#65a30d", "#ca8a04", "#fef9c3", "#78350f", "#ea580c"], decor: ["Sugarcane arch", "Clay pot installations", "Banana-leaf canopy", "Folk-art banners"] },
-      { name: "Unity in Colours", description: "Bold multicolour bunting celebrating every culture in the neighbourhood.", palette: ["#e11d48", "#2563eb", "#16a34a", "#facc15", "#9333ea"], decor: ["Flag bunting", "Culture booths", "Hand-print mural wall", "Colourful umbrellas"] },
+      {
+        name: "Festival of Lights",
+        description: "Diyas, lanterns and rangoli for a warm festive evening.",
+        palette: ["#f97316", "#facc15", "#7c2d12", "#fef3c7", "#be123c"],
+        decor: ["Diya pathways", "Paper lantern ceiling", "Community rangoli contest area", "Marigold stage backdrop"],
+      },
+      {
+        name: "Harvest Mela",
+        description: "Pongal / Onam style earthy decor with sugarcane, banana leaves and clay pots.",
+        palette: ["#65a30d", "#ca8a04", "#fef9c3", "#78350f", "#ea580c"],
+        decor: ["Sugarcane arch", "Clay pot installations", "Banana-leaf canopy", "Folk-art banners"],
+      },
+      {
+        name: "Unity in Colours",
+        description: "Bold multicolour bunting celebrating every culture in the neighbourhood.",
+        palette: ["#e11d48", "#2563eb", "#16a34a", "#facc15", "#9333ea"],
+        decor: ["Flag bunting", "Culture booths", "Hand-print mural wall", "Colourful umbrellas"],
+      },
     ],
     activities: [
       { title: "Talent showcase", description: "Open stage for residents: singing, dance, stand-up.", audience: "All ages" },
@@ -144,9 +220,24 @@ const IDEAS: Record<EventType, Omit<IdeaPack, "source" | "menu">> = {
   },
   corporate: {
     themes: [
-      { name: "Modern Minimal", description: "Clean whites, brand colour accents and smart lighting.", palette: ["#0f172a", "#f8fafc", "#2563eb", "#94a3b8", "#22c55e"], decor: ["Branded backdrop", "LED name wall", "Minimal floral centrepieces", "Lounge pods"] },
-      { name: "Future Forward", description: "Neon gradients and tech-inspired installations.", palette: ["#7c3aed", "#06b6d4", "#0f172a", "#f472b6", "#e2e8f0"], decor: ["Neon tunnel entry", "Interactive screens", "Holographic badges", "AR photo booth"] },
-      { name: "Green Summit", description: "Sustainable decor with plants, jute and reusable materials.", palette: ["#166534", "#a3e635", "#fefce8", "#78716c", "#14b8a6"], decor: ["Living plant walls", "Jute table runners", "Upcycled signage", "Seed-paper badges"] },
+      {
+        name: "Modern Minimal",
+        description: "Clean whites, brand colour accents and smart lighting.",
+        palette: ["#0f172a", "#f8fafc", "#2563eb", "#94a3b8", "#22c55e"],
+        decor: ["Branded backdrop", "LED name wall", "Minimal floral centrepieces", "Lounge pods"],
+      },
+      {
+        name: "Future Forward",
+        description: "Neon gradients and tech-inspired installations.",
+        palette: ["#7c3aed", "#06b6d4", "#0f172a", "#f472b6", "#e2e8f0"],
+        decor: ["Neon tunnel entry", "Interactive screens", "Holographic badges", "AR photo booth"],
+      },
+      {
+        name: "Green Summit",
+        description: "Sustainable decor with plants, jute and reusable materials.",
+        palette: ["#166534", "#a3e635", "#fefce8", "#78716c", "#14b8a6"],
+        decor: ["Living plant walls", "Jute table runners", "Upcycled signage", "Seed-paper badges"],
+      },
     ],
     activities: [
       { title: "Live polling", description: "Audience votes on questions from their phones; results on the LED.", audience: "Attendees" },
@@ -164,10 +255,27 @@ export function offlineIdeas(ev: EventPlan): IdeaPack {
   const jain = ev.guests.some((g) => g.dietary === "jain");
   const southIndian = /chennai|coimbatore|madurai|trichy|salem|bengaluru|hyderabad|kochi|vellore|erode|puducherry|mysuru/i.test(ev.city);
   const menu = [
-    { course: "Welcome", items: southIndian ? ["Rose milk", "Panakam", "Mini masala vada"] : ["Aam panna", "Masala chaas", "Dhokla bites"] },
+    {
+      course: "Welcome",
+      items: southIndian ? ["Rose milk", "Panakam", "Mini masala vada"] : ["Aam panna", "Masala chaas", "Dhokla bites"],
+    },
     { course: "Starters", items: ["Paneer tikka", "Corn cheese balls", veg < 0.8 ? "Chicken 65" : "Gobi 65", "Hara bhara kebab"] },
-    { course: "Mains", items: southIndian ? ["Veg biryani with raita", "Sambar, rasam & curd rice", "Poriyal and kootu", veg < 0.8 ? "Chettinad chicken" : "Paneer butter masala", "Parotta with salna"] : ["Dal makhani", "Paneer lababdar", "Jeera rice", veg < 0.8 ? "Butter chicken" : "Veg kofta", "Assorted breads"] },
-    { course: "Desserts", items: southIndian ? ["Elaneer payasam", "Gulab jamun", "Ice cream counter"] : ["Rasmalai", "Gajar halwa", "Kulfi counter"] },
+    {
+      course: "Mains",
+      items: southIndian
+        ? [
+            "Veg biryani with raita",
+            "Sambar, rasam & curd rice",
+            "Poriyal and kootu",
+            veg < 0.8 ? "Chettinad chicken" : "Paneer butter masala",
+            "Parotta with salna",
+          ]
+        : ["Dal makhani", "Paneer lababdar", "Jeera rice", veg < 0.8 ? "Butter chicken" : "Veg kofta", "Assorted breads"],
+    },
+    {
+      course: "Desserts",
+      items: southIndian ? ["Elaneer payasam", "Gulab jamun", "Ice cream counter"] : ["Rasmalai", "Gajar halwa", "Kulfi counter"],
+    },
   ];
   if (jain) menu.push({ course: "Jain counter", items: ["No onion-garlic dal", "Raw banana sabzi", "Plain rice and phulka"] });
   return { ...IDEAS[ev.type], menu, source: "offline" };
@@ -192,7 +300,14 @@ export function offlineOptimize(ev: EventPlan, summary: BudgetSummary): BudgetSu
 
   if (summary.cateringFromEstimate && ev.budget.perPlate > 300) {
     const value = Math.round((ev.budget.perPlate * 0.88) / 10) * 10;
-    out.push({ id: nanoid(6), title: `Trim per-plate cost to ₹${value}`, detail: "Swap one live counter for a dessert station and serve welcome drinks instead of mocktails.", category: "catering", saving: (ev.budget.perPlate - value) * guests, action: { type: "perPlate", value } });
+    out.push({
+      id: nanoid(6),
+      title: `Trim per-plate cost to ₹${value}`,
+      detail: "Swap one live counter for a dessert station and serve welcome drinks instead of mocktails.",
+      category: "catering",
+      saving: (ev.budget.perPlate - value) * guests,
+      action: { type: "perPlate", value },
+    });
   }
   const seats = totalSeats(layout);
   const tables = layout.elements.filter((e) => getDef(e.kind).category === "seating");
@@ -203,38 +318,120 @@ export function offlineOptimize(ev: EventPlan, summary: BudgetSummary): BudgetSu
     const per = seatCount(kind, getDef(kind).w);
     const count = Math.min(counts.get(kind)!, Math.floor((seats - guests) / per));
     if (count > 0)
-      out.push({ id: nanoid(6), title: `Remove ${count} empty ${getDef(kind).label.toLowerCase()}${count > 1 ? "s" : ""}`, detail: `You have ${seats - guests} more seats than guests. Fewer tables also frees up floor space.`, category: "rentals", saving: count * unitCost(kind, ev.city), action: { type: "removeTables", kind, count } });
+      out.push({
+        id: nanoid(6),
+        title: `Remove ${count} empty ${getDef(kind).label.toLowerCase()}${count > 1 ? "s" : ""}`,
+        detail: `You have ${seats - guests} more seats than guests. Fewer tables also frees up floor space.`,
+        category: "rentals",
+        saving: count * unitCost(kind, ev.city),
+        action: { type: "removeTables", kind, count },
+      });
   }
   const decor = cat("decor");
-  if (decor.committed > 0) out.push({ id: nanoid(6), title: "Reuse ceremony decor for the reception", detail: "Move florals and backdrops between functions and pick seasonal flowers. Most decorators agree to this if asked early.", category: "decor", saving: Math.round(decor.committed * 0.15) });
+  if (decor.committed > 0)
+    out.push({
+      id: nanoid(6),
+      title: "Reuse ceremony decor for the reception",
+      detail: "Move florals and backdrops between functions and pick seasonal flowers. Most decorators agree to this if asked early.",
+      category: "decor",
+      saving: Math.round(decor.committed * 0.15),
+    });
   const venue = cat("venue");
-  if (venue.committed > 0 || venue.allocated > 0) out.push({ id: nanoid(6), title: "Ask for an off-peak or weekday rate", detail: "Venues often discount 20–30% outside peak muhurtham and weekend dates.", category: "venue", saving: Math.round(Math.max(venue.committed, venue.allocated) * 0.2) });
-  if (layout.elements.some((e) => e.kind === "led-screen")) out.push({ id: nanoid(6), title: "Replace the LED wall with a projector", detail: "A 4K projector and screen covers most halls under 300 guests.", category: "entertainment", saving: Math.round(unitCost("led-screen", ev.city) * 0.6) });
+  if (venue.committed > 0 || venue.allocated > 0)
+    out.push({
+      id: nanoid(6),
+      title: "Ask for an off-peak or weekday rate",
+      detail: "Venues often discount 20–30% outside peak muhurtham and weekend dates.",
+      category: "venue",
+      saving: Math.round(Math.max(venue.committed, venue.allocated) * 0.2),
+    });
+  if (layout.elements.some((e) => e.kind === "led-screen"))
+    out.push({
+      id: nanoid(6),
+      title: "Replace the LED wall with a projector",
+      detail: "A 4K projector and screen covers most halls under 300 guests.",
+      category: "entertainment",
+      saving: Math.round(unitCost("led-screen", ev.city) * 0.6),
+    });
   const photo = cat("photography");
-  if (photo.committed > 150000) out.push({ id: nanoid(6), title: "Choose a highlights film instead of full coverage", detail: "Candid photos plus a 5-minute highlights film usually costs about 25% less.", category: "photography", saving: Math.round(photo.committed * 0.25) });
+  if (photo.committed > 150000)
+    out.push({
+      id: nanoid(6),
+      title: "Choose a highlights film instead of full coverage",
+      detail: "Candid photos plus a 5-minute highlights film usually costs about 25% less.",
+      category: "photography",
+      saving: Math.round(photo.committed * 0.25),
+    });
   const inv = cat("invitations");
-  if (inv.allocated > 0) out.push({ id: nanoid(6), title: "Go digital with invitations", detail: "Send video e-invites on WhatsApp and print only for elders.", category: "invitations", saving: Math.round(inv.allocated * 0.6) });
+  if (inv.allocated > 0)
+    out.push({
+      id: nanoid(6),
+      title: "Go digital with invitations",
+      detail: "Send video e-invites on WhatsApp and print only for elders.",
+      category: "invitations",
+      saving: Math.round(inv.allocated * 0.6),
+    });
 
-  return out.filter((s) => s.saving > 0).sort((a, b) => b.saving - a.saving).slice(0, 6);
+  return out
+    .filter((s) => s.saving > 0)
+    .sort((a, b) => b.saving - a.saving)
+    .slice(0, 6);
 }
 
 // ---------- Writer ----------
 
 export type WriteKind = "invitation" | "welcome-speech" | "thank-you" | "whatsapp-reminder" | "vendor-enquiry";
 
+/** Joins blocks with a blank line between them, skipping empty ones (e.g. no extra details). */
+function paragraphs(...blocks: string[]): string {
+  return blocks.filter(Boolean).join("\n\n");
+}
+
 export function offlineWrite(kind: WriteKind, ev: EventPlan, details: string): string {
-  const date = new Date(`${ev.date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const date = new Date(`${ev.date}T00:00:00`).toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
   const venue = activeLayout(ev).venue.name;
   switch (kind) {
     case "invitation":
-      return `With joy in our hearts, we invite you to\n\n✨ ${ev.name} ✨\n\n📅 ${date}\n🕕 ${ev.startTime} onwards\n📍 ${venue}, ${ev.city}\n\nTheme: ${ev.theme}. Your presence will make the day complete.\n${details ? `\n${details}\n` : ""}\nKindly RSVP at the earliest.`;
+      return paragraphs(
+        "With joy in our hearts, we invite you to",
+        `✨ ${ev.name} ✨`,
+        `📅 ${date}\n🕕 ${ev.startTime} onwards\n📍 ${venue}, ${ev.city}`,
+        `Theme: ${ev.theme}. Your presence will make the day complete.`,
+        details,
+        "Kindly RSVP at the earliest.",
+      );
     case "welcome-speech":
-      return `Good evening everyone!\n\nOn behalf of the family, a very warm welcome to ${ev.name}. Many of you have travelled far, rearranged plans and brought so much love with you tonight, and that means the world to us.\n\n${details || "Tonight is about celebrating together, sharing a meal and making memories."}\n\nPlease enjoy the food, hit the dance floor, and don't forget to stop by the photo booth. Thank you for being here!`;
+      return paragraphs(
+        "Good evening everyone!",
+        `On behalf of the family, a very warm welcome to ${ev.name}. Many of you have travelled far, rearranged plans and brought so much love with you tonight, and that means the world to us.`,
+        details || "Tonight is about celebrating together, sharing a meal and making memories.",
+        "Please enjoy the food, hit the dance floor, and don't forget to stop by the photo booth. Thank you for being here!",
+      );
     case "thank-you":
-      return `Dear friend,\n\nThank you for celebrating ${ev.name} with us on ${date}. Your blessings, laughter and presence made the day unforgettable.\n\n${details || "We're so grateful to have you in our lives."}\n\nWith love and gratitude.`;
+      return paragraphs(
+        "Dear friend,",
+        `Thank you for celebrating ${ev.name} with us on ${date}. Your blessings, laughter and presence made the day unforgettable.`,
+        details || "We're so grateful to have you in our lives.",
+        "With love and gratitude.",
+      );
     case "whatsapp-reminder":
-      return `Hi! 👋 Gentle reminder for *${ev.name}* on *${date}* at *${ev.startTime}*.\n📍 ${venue}, ${ev.city}\n${details ? `\n${details}\n` : ""}\nPlease reply with your RSVP so we can plan seating and food. See you there! 🎉`;
+      return paragraphs(
+        `Hi! 👋 Gentle reminder for *${ev.name}* on *${date}* at *${ev.startTime}*.\n📍 ${venue}, ${ev.city}`,
+        details,
+        "Please reply with your RSVP so we can plan seating and food. See you there! 🎉",
+      );
     case "vendor-enquiry":
-      return `Hello,\n\nWe are planning ${ev.name} (${ev.type}) on ${date} at ${venue}, ${ev.city}, for about ${ev.guestCount} guests.\n\n${details || "Could you please share your packages, availability and a detailed quote?"}\n\nPlease also mention advance terms and setup time needed. Looking forward to hearing from you.\n\nThanks!`;
+      return paragraphs(
+        "Hello,",
+        `We are planning ${ev.name} (${ev.type}) on ${date} at ${venue}, ${ev.city}, for about ${ev.guestCount} guests.`,
+        details || "Could you please share your packages, availability and a detailed quote?",
+        "Please also mention advance terms and setup time needed. Looking forward to hearing from you.",
+        "Thanks!",
+      );
   }
 }

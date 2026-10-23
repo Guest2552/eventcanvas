@@ -43,7 +43,8 @@ export default function SeatPage() {
             <p className="text-xs uppercase opacity-80">Welcome, {ticket.n.split(" ")[0]}! 🎉</p>
             <p className="mt-1 font-heading text-2xl leading-tight font-semibold">{ticket.e}</p>
             <p className="mt-2 flex items-center gap-1 text-sm opacity-90">
-              <CalendarDays className="size-4" /> {formatDate(ticket.d, { weekday: "long", day: "numeric", month: "long" })} · {formatTime(ticket.t)}
+              <CalendarDays className="size-4" /> {formatDate(ticket.d, { weekday: "long", day: "numeric", month: "long" })} ·{" "}
+              {formatTime(ticket.t)}
             </p>
             <p className="mt-1 flex items-center gap-1 text-sm opacity-90">
               <MapPin className="size-4" /> {ticket.v}, {ticket.c}
@@ -69,10 +70,16 @@ export default function SeatPage() {
               mode="view"
               showGrid={false}
               focusIds={new Set([tableId])}
-              seatVisual={(s) => (s.elementId === tableId && s.index === ticket.s - 1 ? { fill: "#e11d48", stroke: "#881337" } : { fill: "#f5f5f4", stroke: "#d6d3d1" })}
+              seatVisual={(s) =>
+                s.elementId === tableId && s.index === ticket.s - 1
+                  ? { fill: "#e11d48", stroke: "#881337" }
+                  : { fill: "#f5f5f4", stroke: "#d6d3d1" }
+              }
             />
           </div>
-          <p className="p-3 text-center text-xs text-muted-foreground">Your table is highlighted. Pinch or scroll to zoom. The stage is at the top.</p>
+          <p className="p-3 text-center text-xs text-muted-foreground">
+            Your table is highlighted. Pinch or scroll to zoom. The stage is at the top.
+          </p>
         </div>
       </main>
     </div>

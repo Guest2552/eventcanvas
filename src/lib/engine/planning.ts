@@ -42,7 +42,15 @@ export function vendorChecklist(ev: EventPlan, layout: Layout): ChecklistItem[] 
         : vendors.length
           ? "in-progress"
           : "missing";
-      return { category, label: VENDOR_CATEGORIES[category].label, emoji: VENDOR_CATEGORIES[category].emoji, reasons: r.reasons, essential: r.essential, vendors, status };
+      return {
+        category,
+        label: VENDOR_CATEGORIES[category].label,
+        emoji: VENDOR_CATEGORIES[category].emoji,
+        reasons: r.reasons,
+        essential: r.essential,
+        vendors,
+        status,
+      };
     })
     .sort((a, b) => Number(b.essential) - Number(a.essential) || order(a.status) - order(b.status));
 }

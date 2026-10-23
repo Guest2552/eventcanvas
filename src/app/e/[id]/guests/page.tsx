@@ -1,7 +1,6 @@
 "use client";
 
-import { Download, Eraser, Link2, Loader2, Pencil, Plus, Search, Trash2, Upload, Wand2 } from "lucide-react";
-import { nanoid } from "nanoid";
+import { Download, Eraser, Link2, Pencil, Plus, Search, Trash2, Upload, Wand2 } from "lucide-react";
 import Papa from "papaparse";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -9,22 +8,25 @@ import { BlueprintCanvas } from "@/components/blueprint/canvas";
 import { useCurrentEvent } from "@/components/event/use-current-event";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { Textarea } from "@/components/ui/textarea";
 import { seatIndex } from "@/lib/engine/geometry";
+import { aiApi } from "@/lib/ai-client";
 import { autoSeat, EMPTY_RULES, matchGuests, type SeatingRules } from "@/lib/engine/seating";
+import { blankGuest, DIET_LABELS, GUEST_CSV_TEMPLATE, parseGuestRows } from "@/lib/guests";
 import { buildSeatLink } from "@/lib/seat-link";
+import { GuestEditorDialog } from "@/components/guests/guest-editor-dialog";
+import { SmartSeatingDialog } from "@/components/guests/smart-seating-dialog";
 import { guestSeatVisual, guestsBySeat, SEAT_LEGEND } from "@/lib/seat-visuals";
-import type { Dietary, Guest, Rsvp } from "@/lib/types";
+import type { Guest, Rsvp } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const RSVP_STYLE: Record<Rsvp, string> = { yes: "bg-emerald-100 text-emerald-800", pending: "bg-amber-100 text-amber-800", maybe: "bg-sky-100 text-sky-800", no: "bg-stone-200 text-stone-600" };
-const DIET: Record<Dietary, string> = { veg: "🟢 Veg", "non-veg": "🔴 Non-veg", vegan: "🌱 Vegan", jain: "🟡 Jain" };
-
-const blankGuest = (): Guest => ({ id: nanoid(8), name: "", group: "", side: "", dietary: "veg", rsvp: "pending", vip: false, accessible: false, child: false, checkedIn: false });
+const RSVP_STYLE: Record<Rsvp, string> = {
+  yes: "bg-emerald-100 text-emerald-800",
+  pending: "bg-amber-100 text-amber-800",
+  maybe: "bg-sky-100 text-sky-800",
+  no: "bg-stone-200 text-stone-600",
+};
 
 export default function GuestsPage() {
   const { ev, layout, update } = useCurrentEvent();
@@ -83,31 +85,31 @@ export default function GuestsPage() {
     let parsed: SeatingRules = EMPTY_RULES;
     let usedAi = false;
     if (rules.trim()) {
-      try {
-        const res = await fetch("/api/ai/seating", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ rules, guests: ev.guests.map((g) => ({ name: g.name, group: g.group })) }),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { rules: { keepTogether: string[][]; keepApart: string[][]; nearStage: string[]; nearExit: string[] }; source: string };
-          parsed = {
-            keepTogether: data.rules.keepTogether.map((s) => matchGuests(ev, s)),
-            keepApart: data.rules.keepApart.map((s) => matchGuests(ev, s)),
-            nearStage: matchGuests(ev, data.rules.nearStage),
-            nearExit: matchGuests(ev, data.rules.nearExit),
-          };
-          usedAi = data.source === "ai";
-        }
-      } catch {
-        // fall through to default rules
+      const data = await aiApi.seating({ rules, guests: ev.guests.map((g) => ({ name: g.name, group: g.group })) });
+      if (data) {
+        parsed = {
+          keepTogether: data.rules.keepTogether.map((s) => matchGuests(ev, s)),
+          keepApart: data.rules.keepApart.map((s) => matchGuests(ev, s)),
+          nearStage: matchGuests(ev, data.rules.nearStage),
+          nearExit: matchGuests(ev, data.rules.nearExit),
+        };
+        usedAi = data.source === "ai";
       }
     }
     const result = autoSeat(ev, layout, parsed);
     update((d) => {
       for (const g of d.guests) g.seatId = result.assignments[g.id];
     });
-    setNotes([...(rules.trim() ? [usedAi ? "AI understood your seating rules." : "AI was unavailable, so the default rules were used (families together, VIPs up front)."] : []), ...result.notes]);
+    setNotes([
+      ...(rules.trim()
+        ? [
+            usedAi
+              ? "AI understood your seating rules."
+              : "AI was unavailable, so the default rules were used (families together, VIPs up front).",
+          ]
+        : []),
+      ...result.notes,
+    ]);
     setSeating(false);
     toast.success(`Seated ${result.placed} guests`);
   };
@@ -117,29 +119,7 @@ export default function GuestsPage() {
       header: true,
       skipEmptyLines: true,
       complete: (res) => {
-        const pick = (row: Record<string, string>, ...keys: string[]) => {
-          const k = Object.keys(row).find((x) => keys.includes(x.trim().toLowerCase()));
-          return k ? row[k]?.trim() ?? "" : "";
-        };
-        const yes = (v: string) => /^(y|yes|true|1)$/i.test(v);
-        const guests: Guest[] = res.data
-          .map((row) => {
-            const diet = pick(row, "dietary", "diet", "food").toLowerCase();
-            const rsvp = pick(row, "rsvp", "status").toLowerCase();
-            return {
-              ...blankGuest(),
-              name: pick(row, "name", "guest", "full name"),
-              group: pick(row, "group", "family", "household"),
-              side: pick(row, "side"),
-              phone: pick(row, "phone", "mobile", "whatsapp"),
-              dietary: (diet.includes("non") ? "non-veg" : diet.includes("vegan") ? "vegan" : diet.includes("jain") ? "jain" : "veg") as Dietary,
-              rsvp: (["yes", "no", "maybe"].includes(rsvp) ? rsvp : "pending") as Rsvp,
-              vip: yes(pick(row, "vip")),
-              accessible: yes(pick(row, "accessible", "wheelchair")),
-              child: yes(pick(row, "child", "kid")),
-            };
-          })
-          .filter((g) => g.name);
+        const guests = parseGuestRows(res.data);
         update((d) => void d.guests.push(...guests));
         toast.success(`Imported ${guests.length} guests`);
       },
@@ -148,7 +128,7 @@ export default function GuestsPage() {
   };
 
   const downloadSample = () => {
-    const csv = "name,group,side,phone,dietary,rsvp,vip,accessible,child\nLakshmi Iyer,Iyer family,Bride,9840011111,veg,yes,yes,no,no\nKarthik Menon,Menon family,Groom,9840022222,non-veg,pending,no,no,no\n";
+    const csv = GUEST_CSV_TEMPLATE;
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: "guest-list-template.csv" });
     a.click();
@@ -157,13 +137,19 @@ export default function GuestsPage() {
 
   const shareLink = async (g: Guest) => {
     const url = buildSeatLink(window.location.origin, ev, layout, g);
-    if (!url) return toast.error("Seat this guest first");
+    if (!url) {
+      toast.error("Seat this guest first");
+      return;
+    }
     await navigator.clipboard.writeText(url).catch(() => {});
     toast.success(`Seat link for ${g.name} copied`, { action: { label: "Open", onClick: () => window.open(url, "_blank") } });
   };
 
   const saveGuest = () => {
-    if (!editing || !editing.name.trim()) return toast.error("Name is required");
+    if (!editing || !editing.name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
     update((d) => {
       const i = d.guests.findIndex((g) => g.id === editing.id);
       if (i >= 0) d.guests[i] = editing;
@@ -178,7 +164,10 @@ export default function GuestsPage() {
     { label: "Pending", value: count((g) => g.rsvp === "pending" || g.rsvp === "maybe") },
     { label: "Declined", value: count((g) => g.rsvp === "no") },
     { label: "Seated", value: `${seatedCount}/${attending.length}` },
-    { label: "Veg · Non-veg", value: `${count((g) => g.rsvp !== "no" && g.dietary !== "non-veg")} · ${count((g) => g.rsvp !== "no" && g.dietary === "non-veg")}` },
+    {
+      label: "Veg · Non-veg",
+      value: `${count((g) => g.rsvp !== "no" && g.dietary !== "non-veg")} · ${count((g) => g.rsvp !== "no" && g.dietary === "non-veg")}`,
+    },
     { label: "Kids", value: count((g) => g.child && g.rsvp !== "no") },
     { label: "Wheelchair", value: count((g) => g.accessible && g.rsvp !== "no") },
   ];
@@ -205,7 +194,13 @@ export default function GuestsPage() {
           <Button size="icon-sm" variant="ghost" onClick={downloadSample} aria-label="Download CSV template">
             <Download />
           </Button>
-          <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && importCsv(e.target.files[0])} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && importCsv(e.target.files[0])}
+          />
         </div>
       </div>
 
@@ -214,7 +209,13 @@ export default function GuestsPage() {
           <div className="flex gap-2 border-b p-3">
             <div className="relative flex-1">
               <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guests or groups" className="h-8 pl-8" aria-label="Search guests" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search guests or groups"
+                className="h-8 pl-8"
+                aria-label="Search guests"
+              />
             </div>
             <NativeSelect value={filter} onChange={(e) => setFilter(e.target.value)} className="w-40" aria-label="Filter guests">
               <option value="all">All guests</option>
@@ -233,10 +234,16 @@ export default function GuestsPage() {
             {selectedGuest && (
               <div className="space-y-2 border-b bg-primary/5 px-3 py-2 text-xs text-primary">
                 <p>
-                  <span className="font-semibold">{selectedGuest.name}</span> selected. Click any seat on the map to {seatOf(selectedGuest) ? "move them (occupied seats swap)" : "seat them"}, or pick one here:
+                  <span className="font-semibold">{selectedGuest.name}</span> selected. Click any seat on the map to{" "}
+                  {seatOf(selectedGuest) ? "move them (occupied seats swap)" : "seat them"}, or pick one here:
                 </p>
                 {/* Keyboard and screen-reader path to the same seat assignment as the canvas */}
-                <NativeSelect value="" onChange={(e) => e.target.value && assignSeat(e.target.value)} aria-label={`Choose a seat for ${selectedGuest.name}`} className="bg-card">
+                <NativeSelect
+                  value=""
+                  onChange={(e) => e.target.value && assignSeat(e.target.value)}
+                  aria-label={`Choose a seat for ${selectedGuest.name}`}
+                  className="bg-card"
+                >
                   <option value="">Choose a seat…</option>
                   {layout.elements
                     .filter((el) => [...seats.values()].some((s) => s.elementId === el.id))
@@ -248,7 +255,8 @@ export default function GuestsPage() {
                             const occupant = bySeat.get(s.id);
                             return (
                               <option key={s.id} value={s.id} disabled={occupant?.id === selectedGuest.id}>
-                                {el.label} seat {s.index + 1} {occupant ? (occupant.id === selectedGuest.id ? "(current)" : `(swap with ${occupant.name})`) : "(free)"}
+                                {el.label} seat {s.index + 1}{" "}
+                                {occupant ? (occupant.id === selectedGuest.id ? "(current)" : `(swap with ${occupant.name})`) : "(free)"}
                               </option>
                             );
                           })}
@@ -258,12 +266,23 @@ export default function GuestsPage() {
               </div>
             )}
           </div>
-          <ul className="max-h-[50vh] min-h-0 flex-1 divide-y overflow-y-auto scrollbar-thin lg:max-h-none" aria-label="Guest list">
+          <ul className="max-h-[50vh] min-h-0 flex-1 scrollbar-thin divide-y overflow-y-auto lg:max-h-none" aria-label="Guest list">
             {list.map((g) => {
               const seat = seatOf(g);
               return (
-                <li key={g.id} className={cn("group flex items-center gap-2 px-3 py-2 transition hover:bg-muted/60", selected === g.id && "bg-primary/10")}>
-                  <button type="button" className="min-w-0 flex-1 cursor-pointer rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50" aria-pressed={selected === g.id} onClick={() => setSelected(selected === g.id ? null : g.id)}>
+                <li
+                  key={g.id}
+                  className={cn(
+                    "group flex items-center gap-2 px-3 py-2 transition hover:bg-muted/60",
+                    selected === g.id && "bg-primary/10",
+                  )}
+                >
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 cursor-pointer rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    aria-pressed={selected === g.id}
+                    onClick={() => setSelected(selected === g.id ? null : g.id)}
+                  >
                     <span className="block truncate text-sm font-medium">
                       {g.name}{" "}
                       {g.vip && (
@@ -283,7 +302,7 @@ export default function GuestsPage() {
                       )}
                     </span>
                     <span className="block truncate text-[11px] text-muted-foreground">
-                      {g.group || "No group"} · {DIET[g.dietary]}
+                      {g.group || "No group"} · {DIET_LABELS[g.dietary]}
                     </span>
                   </button>
                   <NativeSelect
@@ -302,10 +321,21 @@ export default function GuestsPage() {
                     {seat ? `${seat.tableLabel}·${seat.index + 1}` : g.rsvp === "no" ? "–" : "No seat"}
                   </Badge>
                   <div className="flex opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
-                    <Button size="icon-xs" variant="ghost" onClick={(e) => (e.stopPropagation(), shareLink(g))} aria-label={`Copy seat link for ${g.name}`} title="Copy 'find my seat' link">
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={(e) => (e.stopPropagation(), shareLink(g))}
+                      aria-label={`Copy seat link for ${g.name}`}
+                      title="Copy 'find my seat' link"
+                    >
                       <Link2 />
                     </Button>
-                    <Button size="icon-xs" variant="ghost" onClick={(e) => (e.stopPropagation(), setEditing({ ...g }))} aria-label={`Edit ${g.name}`}>
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={(e) => (e.stopPropagation(), setEditing({ ...g }))}
+                      aria-label={`Edit ${g.name}`}
+                    >
                       <Pencil />
                     </Button>
                     <Button
@@ -325,14 +355,23 @@ export default function GuestsPage() {
             })}
             {list.length === 0 && (
               <li className="p-6 text-center text-sm text-muted-foreground">
-                {ev.guests.length ? "No guests match this filter." : "No guests yet. Add them one by one or import a CSV (download the template with the ⬇ button)."}
+                {ev.guests.length
+                  ? "No guests match this filter."
+                  : "No guests yet. Add them one by one or import a CSV (download the template with the ⬇ button)."}
               </li>
             )}
           </ul>
         </section>
 
         <section className="relative min-h-[420px] flex-1">
-          <BlueprintCanvas layout={layout} mode="seats" showGrid={false} seatVisual={(s) => guestSeatVisual(bySeat.get(s.id), s, { highlightGuestId: selected ?? undefined })} onSeatClick={(s) => assignSeat(s.id)} focusIds={focusIds} />
+          <BlueprintCanvas
+            layout={layout}
+            mode="seats"
+            showGrid={false}
+            seatVisual={(s) => guestSeatVisual(bySeat.get(s.id), s, { highlightGuestId: selected ?? undefined })}
+            onSeatClick={(s) => assignSeat(s.id)}
+            focusIds={focusIds}
+          />
           <div className="absolute bottom-3 left-3 flex flex-wrap gap-2 rounded-lg bg-card/95 px-3 py-2 text-[11px] shadow-sm">
             {SEAT_LEGEND.map((l) => (
               <span key={l.label} className="flex items-center gap-1">
@@ -355,87 +394,25 @@ export default function GuestsPage() {
         </section>
       </div>
 
-      <Dialog open={seatOpen} onOpenChange={setSeatOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wand2 className="size-4 text-primary" /> Smart seating
-            </DialogTitle>
-            <DialogDescription>Families stay together, VIPs sit nearest the stage, wheelchair users near doors and kids near the kids zone. Add your own rules in plain words.</DialogDescription>
-          </DialogHeader>
-          <Textarea value={rules} onChange={(e) => setRules(e.target.value)} placeholder="e.g. Keep Ravi Pillai and Suresh Nair apart. Seat the Temple committee near the stage. Put Priya's college friends together." className="min-h-24" />
-          {notes.length > 0 && (
-            <ul className="space-y-1 rounded-lg border bg-muted/40 p-3 text-xs">
-              {notes.map((n) => (
-                <li key={n}>✓ {n}</li>
-              ))}
-            </ul>
-          )}
-          <DialogFooter>
-            <Button onClick={runAutoSeat} disabled={seating || ev.guests.length === 0} className="gap-1.5">
-              {seating ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />} {notes.length ? "Re-run seating" : "Seat everyone"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SmartSeatingDialog
+        open={seatOpen}
+        onOpenChange={setSeatOpen}
+        rules={rules}
+        onRulesChange={setRules}
+        notes={notes}
+        busy={seating}
+        disabled={ev.guests.length === 0}
+        onRun={runAutoSeat}
+      />
 
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{ev.guests.some((g) => g.id === editing?.id) ? "Edit guest" : "Add guest"}</DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block col-span-2 space-y-1">
-                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Name</span>
-                <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} autoFocus />
-              </label>
-              <label className="block space-y-1">
-                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Group / family</span>
-                <Input list="guest-groups" value={editing.group} onChange={(e) => setEditing({ ...editing, group: e.target.value })} />
-                <datalist id="guest-groups">
-                  {groups.map((g) => (
-                    <option key={g} value={g} />
-                  ))}
-                </datalist>
-              </label>
-              <label className="block space-y-1">
-                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Phone</span>
-                <Input value={editing.phone ?? ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} />
-              </label>
-              <label className="block space-y-1">
-                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">Food</span>
-                <NativeSelect value={editing.dietary} onChange={(e) => setEditing({ ...editing, dietary: e.target.value as Dietary })}>
-                  {Object.entries(DIET).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </NativeSelect>
-              </label>
-              <label className="block space-y-1">
-                <span className="flex items-center gap-2 text-sm leading-none font-medium text-xs">RSVP</span>
-                <NativeSelect value={editing.rsvp} onChange={(e) => setEditing({ ...editing, rsvp: e.target.value as Rsvp })}>
-                  <option value="pending">Pending</option>
-                  <option value="yes">Yes</option>
-                  <option value="maybe">Maybe</option>
-                  <option value="no">No</option>
-                </NativeSelect>
-              </label>
-              <div className="col-span-2 flex flex-wrap gap-4 text-sm">
-                {(["vip", "accessible", "child"] as const).map((k) => (
-                  <label key={k} className="flex items-center gap-2">
-                    <Checkbox checked={editing[k]} onCheckedChange={(c) => setEditing({ ...editing, [k]: !!c })} /> {k === "vip" ? "VIP" : k === "accessible" ? "Wheelchair" : "Child"}
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={saveGuest}>Save guest</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GuestEditorDialog
+        guest={editing}
+        isNew={!ev.guests.some((g) => g.id === editing?.id)}
+        groups={groups}
+        onChange={setEditing}
+        onClose={() => setEditing(null)}
+        onSave={saveGuest}
+      />
     </div>
   );
 }

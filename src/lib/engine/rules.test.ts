@@ -11,7 +11,10 @@ import { addMinutes, sortKey, vendorArrival } from "./planning";
 import { validateLayout } from "./validation";
 
 const today = new Date("2026-10-23T10:00:00");
-const titles = (ev: EventPlan) => validateLayout(ev, activeLayout(ev)).issues.map((i) => i.title).join(" | ");
+const titles = (ev: EventPlan) =>
+  validateLayout(ev, activeLayout(ev))
+    .issues.map((i) => i.title)
+    .join(" | ");
 
 describe("layout safety rules", () => {
   const base = createDemoWedding(today);

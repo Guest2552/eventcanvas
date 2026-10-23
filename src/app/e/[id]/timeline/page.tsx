@@ -29,8 +29,24 @@ export default function TimelinePage() {
   const done = ev.tasks.filter((t) => t.done).length;
   const kinds = [...new Set(layout.elements.map((e) => e.kind))].filter((k) => getDef(k).category !== "seating" || k === "chair-row");
   const schedule = [...ev.schedule].sort((a, b) => sortKey(ev, a.time) - sortKey(ev, b.time));
-  const setTask = (id: string, patch: Record<string, unknown>, field: string) => update((d) => void Object.assign(d.tasks.find((t) => t.id === id)!, patch), { coalesce: `task-${id}-${field}` });
-  const setSlot = (id: string, patch: Record<string, unknown>, field: string) => update((d) => void Object.assign(d.schedule.find((s) => s.id === id)!, patch), { coalesce: `slot-${id}-${field}` });
+  const setTask = (id: string, patch: Record<string, unknown>, field: string) =>
+    update(
+      (d) =>
+        void Object.assign(
+          d.tasks.find((t) => t.id === id)!,
+          patch,
+        ),
+      { coalesce: `task-${id}-${field}` },
+    );
+  const setSlot = (id: string, patch: Record<string, unknown>, field: string) =>
+    update(
+      (d) =>
+        void Object.assign(
+          d.schedule.find((s) => s.id === id)!,
+          patch,
+        ),
+      { coalesce: `slot-${id}-${field}` },
+    );
   const callTimes = ev.vendors.map((v) => ({ v, time: vendorArrival(ev, v.id) })).filter((x) => x.time);
 
   return (
@@ -68,11 +84,19 @@ export default function TimelinePage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!newTask.trim()) return;
-              update((d) => void d.tasks.push({ id: nanoid(8), title: newTask.trim(), dueDate: newDue, phase: "Details & invites", done: false }));
+              update(
+                (d) =>
+                  void d.tasks.push({ id: nanoid(8), title: newTask.trim(), dueDate: newDue, phase: "Details & invites", done: false }),
+              );
               setNewTask("");
             }}
           >
-            <Input value={newTask} onChange={(e) => setNewTask(e.target.value)} placeholder="Add a task, e.g. Book mehendi artist" className="h-9 min-w-56 flex-1" />
+            <Input
+              value={newTask}
+              onChange={(e) => setNewTask(e.target.value)}
+              placeholder="Add a task, e.g. Book mehendi artist"
+              className="h-9 min-w-56 flex-1"
+            />
             <Input type="date" value={newDue} onChange={(e) => setNewDue(e.target.value)} className="h-9 w-40" aria-label="Due date" />
             <Button type="submit" className="h-9 gap-1.5">
               <Plus className="size-4" /> Add
@@ -95,11 +119,39 @@ export default function TimelinePage() {
                     const overdue = !t.done && t.dueDate < today;
                     return (
                       <li key={t.id} className="group flex items-center gap-3 px-4 py-2">
-                        <Checkbox checked={t.done} onCheckedChange={(c) => setTask(t.id, { done: !!c }, "done")} aria-label={`Mark ${t.title} done`} />
-                        <Input value={t.title} onChange={(e) => setTask(t.id, { title: e.target.value }, "title")} className={cn("h-7 flex-1 border-transparent bg-transparent px-1 shadow-none hover:border-input", t.done && "text-muted-foreground line-through")} aria-label="Task" />
-                        {overdue && <Badge variant="destructive" className="text-[10px]">Overdue</Badge>}
-                        <Input type="date" value={t.dueDate} onChange={(e) => setTask(t.id, { dueDate: e.target.value }, "due")} className="h-7 w-36 text-xs" aria-label="Due date" />
-                        <Button size="icon-xs" variant="ghost" className="opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => update((d) => void (d.tasks = d.tasks.filter((x) => x.id !== t.id)))} aria-label="Delete task">
+                        <Checkbox
+                          checked={t.done}
+                          onCheckedChange={(c) => setTask(t.id, { done: !!c }, "done")}
+                          aria-label={`Mark ${t.title} done`}
+                        />
+                        <Input
+                          value={t.title}
+                          onChange={(e) => setTask(t.id, { title: e.target.value }, "title")}
+                          className={cn(
+                            "h-7 flex-1 border-transparent bg-transparent px-1 shadow-none hover:border-input",
+                            t.done && "text-muted-foreground line-through",
+                          )}
+                          aria-label="Task"
+                        />
+                        {overdue && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Overdue
+                          </Badge>
+                        )}
+                        <Input
+                          type="date"
+                          value={t.dueDate}
+                          onChange={(e) => setTask(t.id, { dueDate: e.target.value }, "due")}
+                          className="h-7 w-36 text-xs"
+                          aria-label="Due date"
+                        />
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          className="opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          onClick={() => update((d) => void (d.tasks = d.tasks.filter((x) => x.id !== t.id)))}
+                          aria-label="Delete task"
+                        >
                           <Trash2 />
                         </Button>
                       </li>
@@ -117,7 +169,9 @@ export default function TimelinePage() {
               <p className="text-sm font-semibold">
                 {formatDate(ev.date, { weekday: "long", day: "numeric", month: "long" })} · starts {formatTime(ev.startTime)}
               </p>
-              <p className="text-xs text-muted-foreground">Each moment is linked to a spot on your blueprint and the vendors who make it happen.</p>
+              <p className="text-xs text-muted-foreground">
+                Each moment is linked to a spot on your blueprint and the vendors who make it happen.
+              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -126,7 +180,16 @@ export default function TimelinePage() {
                 className="gap-1.5"
                 onClick={() => {
                   const last = schedule[schedule.length - 1];
-                  update((d) => void d.schedule.push({ id: nanoid(8), time: last ? addMinutes(last.time, last.durationMin) : d.startTime, durationMin: 30, title: "New moment", vendorIds: [] }));
+                  update(
+                    (d) =>
+                      void d.schedule.push({
+                        id: nanoid(8),
+                        time: last ? addMinutes(last.time, last.durationMin) : d.startTime,
+                        durationMin: 30,
+                        title: "New moment",
+                        vendorIds: [],
+                      }),
+                  );
                 }}
               >
                 <Plus className="size-3.5" /> Moment
@@ -151,21 +214,61 @@ export default function TimelinePage() {
               const linked = s.elementKind ? layout.elements.find((e) => e.kind === s.elementKind) : undefined;
               return (
                 <li key={s.id} className="group relative rounded-xl border bg-card p-3">
-                  <span className={cn("absolute top-4 -left-[31px] size-3.5 rounded-full border-2 border-background", pre ? "bg-stone-400" : "bg-primary")} />
+                  <span
+                    className={cn(
+                      "absolute top-4 -left-[31px] size-3.5 rounded-full border-2 border-background",
+                      pre ? "bg-stone-400" : "bg-primary",
+                    )}
+                  />
                   <div className="flex flex-wrap items-center gap-2">
-                    <Input type="time" value={s.time} onChange={(e) => setSlot(s.id, { time: e.target.value }, "time")} className="h-7 w-28 text-sm font-semibold" aria-label="Time" />
-                    <Input value={s.title} onChange={(e) => setSlot(s.id, { title: e.target.value }, "title")} className="h-7 min-w-48 flex-1 border-transparent px-1 font-medium shadow-none hover:border-input" aria-label="Title" />
+                    <Input
+                      type="time"
+                      value={s.time}
+                      onChange={(e) => setSlot(s.id, { time: e.target.value }, "time")}
+                      className="h-7 w-28 text-sm font-semibold"
+                      aria-label="Time"
+                    />
+                    <Input
+                      value={s.title}
+                      onChange={(e) => setSlot(s.id, { title: e.target.value }, "title")}
+                      className="h-7 min-w-48 flex-1 border-transparent px-1 font-medium shadow-none hover:border-input"
+                      aria-label="Title"
+                    />
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Input type="number" min={5} step={5} value={s.durationMin} onChange={(e) => setSlot(s.id, { durationMin: Number(e.target.value) }, "dur")} className="h-7 w-16 text-xs" aria-label="Duration in minutes" /> min
+                      <Input
+                        type="number"
+                        min={5}
+                        step={5}
+                        value={s.durationMin}
+                        onChange={(e) => setSlot(s.id, { durationMin: Number(e.target.value) }, "dur")}
+                        className="h-7 w-16 text-xs"
+                        aria-label="Duration in minutes"
+                      />{" "}
+                      min
                     </div>
-                    {pre && <Badge variant="secondary" className="text-[10px]">Setup</Badge>}
-                    <Button size="icon-xs" variant="ghost" className="opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => update((d) => void (d.schedule = d.schedule.filter((x) => x.id !== s.id)))} aria-label="Delete moment">
+                    {pre && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Setup
+                      </Badge>
+                    )}
+                    <Button
+                      size="icon-xs"
+                      variant="ghost"
+                      className="opacity-0 group-hover:opacity-100 focus:opacity-100"
+                      onClick={() => update((d) => void (d.schedule = d.schedule.filter((x) => x.id !== s.id)))}
+                      aria-label="Delete moment"
+                    >
                       <Trash2 />
                     </Button>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
                     <MapPin className="size-3.5 text-primary" />
-                    <NativeSelect value={s.elementKind ?? ""} onChange={(e) => setSlot(s.id, { elementKind: e.target.value || undefined }, "kind")} className="w-44" aria-label="Linked blueprint spot">
+                    <NativeSelect
+                      value={s.elementKind ?? ""}
+                      onChange={(e) => setSlot(s.id, { elementKind: e.target.value || undefined }, "kind")}
+                      className="w-44"
+                      aria-label="Linked blueprint spot"
+                    >
                       <option value="">No location</option>
                       {kinds.map((k) => (
                         <option key={k} value={k}>
@@ -179,11 +282,16 @@ export default function TimelinePage() {
                       return (
                         <button
                           key={v.id}
-                          onClick={() => update((d) => {
-                            const slot = d.schedule.find((x) => x.id === s.id)!;
-                            slot.vendorIds = on ? slot.vendorIds.filter((x) => x !== v.id) : [...slot.vendorIds, v.id];
-                          })}
-                          className={cn("rounded-full border px-2 py-0.5 transition", on ? "border-primary/40 bg-primary/10 text-primary" : "text-muted-foreground opacity-60 hover:opacity-100")}
+                          onClick={() =>
+                            update((d) => {
+                              const slot = d.schedule.find((x) => x.id === s.id)!;
+                              slot.vendorIds = on ? slot.vendorIds.filter((x) => x !== v.id) : [...slot.vendorIds, v.id];
+                            })
+                          }
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 transition",
+                            on ? "border-primary/40 bg-primary/10 text-primary" : "text-muted-foreground opacity-60 hover:opacity-100",
+                          )}
                           aria-pressed={on}
                         >
                           {VENDOR_CATEGORIES[v.category].emoji} {v.name}

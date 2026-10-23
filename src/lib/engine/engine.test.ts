@@ -24,16 +24,33 @@ describe("auto-layout", () => {
     const layout = buildLayout({ templateId, guestCount: guests, type });
     const solid = layout.elements.filter((e) => !getDef(e.kind).overlay);
     for (let i = 0; i < solid.length; i++)
-      for (let j = i + 1; j < solid.length; j++) expect(intersects(aabb(solid[i]), aabb(solid[j]), 0.1), `${solid[i].label} vs ${solid[j].label}`).toBe(false);
+      for (let j = i + 1; j < solid.length; j++)
+        expect(intersects(aabb(solid[i]), aabb(solid[j]), 0.1), `${solid[i].label} vs ${solid[j].label}`).toBe(false);
     expect(totalSeats(layout)).toBeGreaterThanOrEqual(guests);
   });
 
   it("every template produces a layout with no safety errors", () => {
     for (const t of VENUE_TEMPLATES) {
       const guests = Math.round((t.venue.widthFt * t.venue.lengthFt) / 50);
-      const ev = createEventPlan({ name: "x", type: "wedding", date: "2026-12-12", startTime: "18:00", city: "Chennai", guestCount: guests, budgetTotal: 500000, theme: "", templateId: t.id }, today);
+      const ev = createEventPlan(
+        {
+          name: "x",
+          type: "wedding",
+          date: "2026-12-12",
+          startTime: "18:00",
+          city: "Chennai",
+          guestCount: guests,
+          budgetTotal: 500000,
+          theme: "",
+          templateId: t.id,
+        },
+        today,
+      );
       const { issues } = validateLayout(ev, activeLayout(ev));
-      expect(issues.filter((i) => i.severity === "error").map((i) => i.title), t.id).toEqual([]);
+      expect(
+        issues.filter((i) => i.severity === "error").map((i) => i.title),
+        t.id,
+      ).toEqual([]);
     }
   });
 });

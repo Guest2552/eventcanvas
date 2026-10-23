@@ -1,6 +1,6 @@
 import { getDef } from "@/lib/catalog/elements";
 import type { EventPlan, Guest, Layout } from "@/lib/types";
-import { aabb, center, dist, type Point, type SeatInfo, seatsForElement } from "./geometry";
+import { aabb, center, dist, inBox, type Point, type SeatInfo, seatsForElement } from "./geometry";
 
 export interface SeatingRules {
   keepTogether: string[][];
@@ -25,7 +25,7 @@ interface TableSlot {
 }
 
 function inZone(p: Point, layout: Layout, kind: string) {
-  return layout.zones.some((z) => z.kind === kind && p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h);
+  return layout.zones.some((z) => z.kind === kind && inBox(p, z));
 }
 
 export function buildTables(layout: Layout): TableSlot[] {

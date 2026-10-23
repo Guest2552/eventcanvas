@@ -38,7 +38,10 @@ export default function OverviewPage() {
   const confirmed = ev.guests.filter((g) => g.rsvp === "yes").length;
   const seated = attending.filter((g) => g.seatId && seatMap.get(g.seatId)?.id === g.id).length;
   const tasksDone = ev.tasks.filter((t) => t.done).length;
-  const upcoming = ev.tasks.filter((t) => !t.done).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5);
+  const upcoming = ev.tasks
+    .filter((t) => !t.done)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 5);
   const booked = ev.vendors.filter((v) => BOOKED_STATUSES.includes(v.status)).length;
   const missing = checklist.filter((c) => c.essential && c.status === "missing");
   const budgetPct = Math.min(100, (summary.committed / Math.max(1, summary.total)) * 100);
@@ -49,7 +52,9 @@ export default function OverviewPage() {
     ...(summary.overBy > 0 ? [{ text: `Over budget by ${inrShort(summary.overBy)}`, href: "/budget", tone: "error" as const }] : []),
     ...summary.dues.filter((d) => d.overdue).map((d) => ({ text: `Payment overdue: ${d.label}`, href: "/budget", tone: "error" as const })),
     ...missing.slice(0, 3).map((m) => ({ text: `No ${m.label.toLowerCase()} yet`, href: "/vendors", tone: "warn" as const })),
-    ...(attending.length - seated > 0 && ev.guests.length ? [{ text: `${attending.length - seated} guests without a seat`, href: "/guests", tone: "warn" as const }] : []),
+    ...(attending.length - seated > 0 && ev.guests.length
+      ? [{ text: `${attending.length - seated} guests without a seat`, href: "/guests", tone: "warn" as const }]
+      : []),
   ];
 
   return (
@@ -57,7 +62,9 @@ export default function OverviewPage() {
       <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="relative overflow-hidden rounded-2xl border bg-card p-5">
           <div className="absolute -top-16 -right-16 size-56 rounded-full bg-marigold/20 blur-2xl" />
-          <p className="text-sm text-muted-foreground">{formatDate(ev.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {formatTime(ev.startTime)}</p>
+          <p className="text-sm text-muted-foreground">
+            {formatDate(ev.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {formatTime(ev.startTime)}
+          </p>
           <div className="mt-2 flex items-end gap-3">
             <span className="font-heading text-6xl leading-none font-semibold text-primary tabular-nums">{Math.max(0, days)}</span>
             <span className="pb-1 text-lg text-muted-foreground">{days === 1 ? "day" : "days"} to go</span>
@@ -67,7 +74,11 @@ export default function OverviewPage() {
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {QUICK_PROMPTS.map((p) => (
-              <button key={p} onClick={() => openAssistant(p)} className="inline-flex items-center gap-1 rounded-full border bg-background/80 px-3 py-1 text-xs transition hover:border-primary/50 hover:text-primary">
+              <button
+                key={p}
+                onClick={() => openAssistant(p)}
+                className="inline-flex items-center gap-1 rounded-full border bg-background/80 px-3 py-1 text-xs transition hover:border-primary/50 hover:text-primary"
+              >
                 <Sparkles className="size-3 text-primary" /> {p}
               </button>
             ))}
@@ -80,26 +91,57 @@ export default function OverviewPage() {
               {inrShort(summary.committed)} <span className="text-xs font-normal text-muted-foreground">/ {inrShort(summary.total)}</span>
             </p>
             <Progress value={budgetPct} className="mt-2" />
-            <p className={summary.overBy ? "mt-1 text-[11px] text-destructive" : "mt-1 text-[11px] text-muted-foreground"}>{summary.overBy ? `${inrShort(summary.overBy)} over` : `${inrShort(summary.remaining)} left · ${inrShort(summary.perHead)}/guest`}</p>
+            <p className={summary.overBy ? "mt-1 text-[11px] text-destructive" : "mt-1 text-[11px] text-muted-foreground"}>
+              {summary.overBy
+                ? `${inrShort(summary.overBy)} over`
+                : `${inrShort(summary.remaining)} left · ${inrShort(summary.perHead)}/guest`}
+            </p>
           </Link>
-          <Link href={`/e/${ev.id}/blueprint`} className="flex items-center gap-3 rounded-xl border bg-card p-3 transition hover:border-primary/40">
+          <Link
+            href={`/e/${ev.id}/blueprint`}
+            className="flex items-center gap-3 rounded-xl border bg-card p-3 transition hover:border-primary/40"
+          >
             <ScoreRing value={validation.score} size={54} />
             <div>
               <p className="text-[11px] font-medium text-muted-foreground">Layout safety</p>
               <p className="text-xs">{validation.issues.length ? `${validation.issues.length} to review` : "All clear"}</p>
             </div>
           </Link>
-          <StatTile label="RSVPs" value={ev.guests.length ? `${confirmed} / ${ev.guests.length}` : ev.guestCount} sub={ev.guests.length ? `${ev.guests.filter((g) => g.rsvp === "pending").length} pending` : "Planned head-count"} />
-          <StatTile label="Seated" value={`${seated} / ${attending.length || ev.guestCount}`} sub={`${totalSeats(layout)} seats on the blueprint`} />
-          <StatTile label="Tasks done" value={`${tasksDone} / ${ev.tasks.length}`} sub={upcoming[0] ? `Next: ${upcoming[0].title.slice(0, 26)}…` : "All done"} />
-          <StatTile label="Vendors booked" value={`${booked} / ${checklist.length}`} sub={missing.length ? `${missing.length} essentials missing` : "Essentials covered"} />
+          <StatTile
+            label="RSVPs"
+            value={ev.guests.length ? `${confirmed} / ${ev.guests.length}` : ev.guestCount}
+            sub={ev.guests.length ? `${ev.guests.filter((g) => g.rsvp === "pending").length} pending` : "Planned head-count"}
+          />
+          <StatTile
+            label="Seated"
+            value={`${seated} / ${attending.length || ev.guestCount}`}
+            sub={`${totalSeats(layout)} seats on the blueprint`}
+          />
+          <StatTile
+            label="Tasks done"
+            value={`${tasksDone} / ${ev.tasks.length}`}
+            sub={upcoming[0] ? `Next: ${upcoming[0].title.slice(0, 26)}…` : "All done"}
+          />
+          <StatTile
+            label="Vendors booked"
+            value={`${booked} / ${checklist.length}`}
+            sub={missing.length ? `${missing.length} essentials missing` : "Essentials covered"}
+          />
         </div>
       </section>
 
       {alerts.length > 0 && (
         <section className="flex flex-wrap gap-2">
           {alerts.slice(0, 6).map((a) => (
-            <Link key={a.text} href={`/e/${ev.id}${a.href}`} className={a.tone === "error" ? "inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs text-destructive" : "inline-flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-amber-800"}>
+            <Link
+              key={a.text}
+              href={`/e/${ev.id}${a.href}`}
+              className={
+                a.tone === "error"
+                  ? "inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs text-destructive"
+                  : "inline-flex items-center gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-amber-800"
+              }
+            >
               {a.tone === "error" ? <CircleAlert className="size-3.5" /> : <AlertTriangle className="size-3.5" />} {a.text}
             </Link>
           ))}
@@ -110,7 +152,10 @@ export default function OverviewPage() {
         <div className="overflow-hidden rounded-2xl border bg-card">
           <div className="flex items-center justify-between border-b px-4 py-2.5">
             <p className="text-sm font-semibold">{layout.name}</p>
-            <Link href={`/e/${ev.id}/blueprint`} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            <Link
+              href={`/e/${ev.id}/blueprint`}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
               Open studio <ArrowRight className="size-3" />
             </Link>
           </div>
@@ -130,7 +175,11 @@ export default function OverviewPage() {
             <ul className="space-y-1.5">
               {upcoming.map((t) => (
                 <li key={t.id} className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={t.done} onCheckedChange={(c) => update((d) => void (d.tasks.find((x) => x.id === t.id)!.done = !!c))} aria-label={`Mark ${t.title} done`} />
+                  <Checkbox
+                    checked={t.done}
+                    onCheckedChange={(c) => update((d) => void (d.tasks.find((x) => x.id === t.id)!.done = !!c))}
+                    aria-label={`Mark ${t.title} done`}
+                  />
                   <span className="min-w-0 flex-1 truncate">{t.title}</span>
                   <Badge variant="outline" className="shrink-0 text-[10px]">
                     {formatDate(t.dueDate, { day: "numeric", month: "short" })}

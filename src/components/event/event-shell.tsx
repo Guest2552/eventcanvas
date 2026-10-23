@@ -81,7 +81,9 @@ export function EventShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="text-lg font-semibold">We couldn&apos;t find this event in this browser.</p>
-        <p className="max-w-md text-sm text-muted-foreground">Plans are stored locally on the device that created them. Open it from the same browser, or start a new one.</p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Plans are stored locally on the device that created them. Open it from the same browser, or start a new one.
+        </p>
         <Link href="/" className={buttonVariants()}>
           Go home
         </Link>
@@ -99,7 +101,7 @@ export function EventShell({ children }: { children: React.ReactNode }) {
         <div className="px-4 py-4">
           <Brand />
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 scrollbar-thin" aria-label="Event sections">
+        <nav className="flex-1 scrollbar-thin space-y-0.5 overflow-y-auto px-2" aria-label="Event sections">
           {NAV.map((n) => (
             <Link
               key={n.href}
@@ -130,7 +132,8 @@ export function EventShell({ children }: { children: React.ReactNode }) {
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-sans text-base font-semibold tracking-normal">{ev.name}</h1>
             <p className="truncate text-xs text-muted-foreground">
-              {formatDate(ev.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })} · {ev.city} · {ev.theme || EVENT_TYPES[ev.type].label}
+              {formatDate(ev.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })} · {ev.city} ·{" "}
+              {ev.theme || EVENT_TYPES[ev.type].label}
             </p>
           </div>
           <Badge variant={days <= 7 ? "default" : "secondary"} className="hidden sm:inline-flex">
@@ -138,13 +141,33 @@ export function EventShell({ children }: { children: React.ReactNode }) {
           </Badge>
           <div className="flex items-center gap-1">
             <Tooltip>
-              <TooltipTrigger render={<Button variant="ghost" size="icon-sm" disabled={!canUndo} onClick={() => useStore.getState().undo(id)} aria-label="Undo" />}>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={!canUndo}
+                    onClick={() => useStore.getState().undo(id)}
+                    aria-label="Undo"
+                  />
+                }
+              >
                 <Undo2 />
               </TooltipTrigger>
               <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
             </Tooltip>
             <Tooltip>
-              <TooltipTrigger render={<Button variant="ghost" size="icon-sm" disabled={!canRedo} onClick={() => useStore.getState().redo(id)} aria-label="Redo" />}>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={!canRedo}
+                    onClick={() => useStore.getState().redo(id)}
+                    aria-label="Redo"
+                  />
+                }
+              >
                 <Redo2 />
               </TooltipTrigger>
               <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
@@ -154,18 +177,23 @@ export function EventShell({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         </header>
-        <nav className="flex gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden scrollbar-thin" aria-label="Event sections">
+        <nav className="flex scrollbar-thin gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden" aria-label="Event sections">
           {NAV.map((n) => (
             <Link
               key={n.href}
               href={base + n.href}
-              className={cn("flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs", active(n.href) ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground")}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs",
+                active(n.href) ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground",
+              )}
             >
               <n.icon className="size-3.5" /> {n.label}
             </Link>
           ))}
         </nav>
-        <main id="main" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">{children}</main>
+        <main id="main" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto outline-none">
+          {children}
+        </main>
       </div>
 
       <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} />

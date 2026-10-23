@@ -47,7 +47,11 @@ export function isSameOrigin(req: Request) {
 
 const fail = (status: number, error: string, headers?: Record<string, string>) => Response.json({ error }, { status, headers });
 
-export async function guard<T>(req: Request, schema: z.ZodType<T>, opts: { route: string; limit?: number; maxBytes?: number }): Promise<{ data: T } | { response: Response }> {
+export async function guard<T>(
+  req: Request,
+  schema: z.ZodType<T>,
+  opts: { route: string; limit?: number; maxBytes?: number },
+): Promise<{ data: T } | { response: Response }> {
   if (!isSameOrigin(req)) return { response: fail(403, "Cross-site requests are not allowed") };
 
   const rl = rateLimit(`${opts.route}:${clientIp(req)}`, opts.limit ?? 20);

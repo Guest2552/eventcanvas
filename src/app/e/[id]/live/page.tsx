@@ -24,7 +24,9 @@ export default function LivePage() {
   const first = schedule[0] ? sortKey(ev, schedule[0].time) : -60;
   const lastSlot = schedule[schedule.length - 1];
   const last = lastSlot ? sortKey(ev, lastSlot.time) + lastSlot.durationMin : 300;
-  const [clock, setClock] = useState(() => (isToday && ev ? sortKey(ev, `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`) : 30));
+  const [clock, setClock] = useState(() =>
+    isToday && ev ? sortKey(ev, `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`) : 30,
+  );
   const [q, setQ] = useState("");
   const bySeat = useMemo(() => (ev ? guestsBySeat(ev) : new Map()), [ev]);
   if (!ev) return null;
@@ -44,7 +46,10 @@ export default function LivePage() {
       const x = d.guests.find((y) => y.id === gid)!;
       x.checkedIn = !x.checkedIn;
     });
-    if (g && !g.checkedIn) toast.success(`${g.name} checked in${g.seatId ? `, seat ${g.seatId && layout.elements.find((e) => e.id === g.seatId!.split(":")[0])?.label}` : ""}`);
+    if (g && !g.checkedIn)
+      toast.success(
+        `${g.name} checked in${g.seatId ? `, seat ${g.seatId && layout.elements.find((e) => e.id === g.seatId!.split(":")[0])?.label}` : ""}`,
+      );
   };
 
   return (
@@ -77,9 +82,24 @@ export default function LivePage() {
         </div>
         <div className="mt-3 flex items-center gap-3">
           <span className="text-[11px] whitespace-nowrap opacity-70">{isToday ? "Event clock" : "Simulate the day"}</span>
-          <input type="range" min={first} max={last} step={5} value={clock} onChange={(e) => setClock(Number(e.target.value))} className="w-full accent-[var(--primary)]" aria-label="Event clock" />
+          <input
+            type="range"
+            min={first}
+            max={last}
+            step={5}
+            value={clock}
+            onChange={(e) => setClock(Number(e.target.value))}
+            className="w-full accent-[var(--primary)]"
+            aria-label="Event clock"
+          />
           {isToday && (
-            <Button size="xs" variant="secondary" onClick={() => setClock(sortKey(ev, `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`))}>
+            <Button
+              size="xs"
+              variant="secondary"
+              onClick={() =>
+                setClock(sortKey(ev, `${String(Math.floor(nowMin / 60)).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`))
+              }
+            >
               Now
             </Button>
           )}
@@ -101,7 +121,13 @@ export default function LivePage() {
             <span className="text-xs text-muted-foreground">Green = arrived · click a seat to check in</span>
           </div>
           <div className="h-[460px]">
-            <BlueprintCanvas layout={layout} mode="seats" showGrid={false} seatVisual={(s) => guestSeatVisual(bySeat.get(s.id), s, { live: true })} onSeatClick={(s) => bySeat.get(s.id) && toggleCheckIn(bySeat.get(s.id)!.id)} />
+            <BlueprintCanvas
+              layout={layout}
+              mode="seats"
+              showGrid={false}
+              seatVisual={(s) => guestSeatVisual(bySeat.get(s.id), s, { live: true })}
+              onSeatClick={(s) => bySeat.get(s.id) && toggleCheckIn(bySeat.get(s.id)!.id)}
+            />
           </div>
         </div>
 
@@ -113,7 +139,13 @@ export default function LivePage() {
             <Progress value={(checked / Math.max(1, attending.length)) * 100} />
             <div className="relative mt-3">
               <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a guest name…" className="pl-8" aria-label="Find guest to check in" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Type a guest name…"
+                className="pl-8"
+                aria-label="Find guest to check in"
+              />
             </div>
             <ul className="mt-2 space-y-1">
               {matches.map((g) => {
@@ -146,8 +178,17 @@ export default function LivePage() {
                       {VENDOR_CATEGORIES[v.category].emoji} {v.name}
                     </span>
                     <span className="text-xs text-muted-foreground tabular-nums">{formatTime(v.arrivalTime!)}</span>
-                    <button onClick={() => update((d) => void (d.vendors.find((x) => x.id === v.id)!.arrived = !v.arrived))} aria-label={`Mark ${v.name} arrived`}>
-                      {v.arrived ? <Badge className="bg-emerald-600 text-white">Arrived</Badge> : isLate ? <Badge variant="destructive">Late</Badge> : <Badge variant="outline">Expected</Badge>}
+                    <button
+                      onClick={() => update((d) => void (d.vendors.find((x) => x.id === v.id)!.arrived = !v.arrived))}
+                      aria-label={`Mark ${v.name} arrived`}
+                    >
+                      {v.arrived ? (
+                        <Badge className="bg-emerald-600 text-white">Arrived</Badge>
+                      ) : isLate ? (
+                        <Badge variant="destructive">Late</Badge>
+                      ) : (
+                        <Badge variant="outline">Expected</Badge>
+                      )}
                     </button>
                   </li>
                 );
@@ -163,7 +204,14 @@ export default function LivePage() {
                 const start = sortKey(ev, s.time);
                 const state = clock >= start + s.durationMin ? "done" : clock >= start ? "live" : "next";
                 return (
-                  <li key={s.id} className={cn("flex items-center gap-2 rounded-md px-2 py-1 text-xs", state === "live" && "bg-primary/10 font-semibold text-primary", state === "done" && "text-muted-foreground line-through")}>
+                  <li
+                    key={s.id}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-2 py-1 text-xs",
+                      state === "live" && "bg-primary/10 font-semibold text-primary",
+                      state === "done" && "text-muted-foreground line-through",
+                    )}
+                  >
                     {state === "done" ? <CheckCircle2 className="size-3.5" /> : <span className="size-3.5" />}
                     <span className="w-14 tabular-nums">{formatTime(s.time)}</span>
                     <span className="truncate">{s.title}</span>
@@ -174,7 +222,9 @@ export default function LivePage() {
           </div>
         </div>
       </section>
-      <p className="text-center text-[11px] text-muted-foreground">Tip: open this page in a second tab of this browser and check-ins sync between tabs instantly.</p>
+      <p className="text-center text-[11px] text-muted-foreground">
+        Tip: open this page in a second tab of this browser and check-ins sync between tabs instantly.
+      </p>
     </div>
   );
 }
