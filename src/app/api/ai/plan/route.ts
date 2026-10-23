@@ -1,0 +1,46 @@
+import { generateText, Output } from "ai";
+import { parsePrompt } from "@/lib/engine/offline";
+import { PLANNER_PERSONA, providerOptions, readJson, retriesFor, withFallback } from "@/lib/ai/provider";
+import { planSchema } from "@/lib/ai/schemas";
+
+export const maxDuration = 60;
+
+export async function POST(req: Request) {
+  const { prompt, today } = await readJson<{ prompt: string; today?: string }>(req);
+  const brief = String(prompt ?? "").slice(0, 2000);
+  const todayIso = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
+  const fallback = parsePrompt(brief, new Date(`${todayIso}T12:00:00`));
+
+  const ai = await withFallback(async (m) => {
+    const { output } = await generateText({
+      model: m.model,
+      providerOptions: providerOptions(m),
+      maxRetries: retriesFor(),
+      instructions: `${PLANNER_PERSONA}\nToday is ${todayIso}. Turn the host's one-line brief into a complete starter plan. Keep the host's stated facts exactly (guest count, city, budget, date). Infer sensible defaults for everything else, but never invent people's names.`,
+      prompt: `Brief: """${brief}"""`,
+      output: Output.object({ schema: planSchema }),
+    });
+    return output;
+  });
+
+  if (!ai) return Response.json({ plan: fallback, source: "offline" });
+
+  const p = ai.result;
+  const plan = {
+    name: p.name || fallback.name,
+    type: p.type,
+    date: /^\d{4}-\d{2}-\d{2}$/.test(p.date) ? p.date : fallback.date,
+    startTime: /^\d{2}:\d{2}$/.test(p.startTime) ? p.startTime : fallback.startTime,
+    city: p.city || fallback.city,
+    guestCount: p.guestCount > 0 ? Math.round(p.guestCount) : fallback.guestCount,
+    budgetTotal: p.budgetTotal > 0 ? Math.round(p.budgetTotal) : fallback.budgetTotal,
+    theme: p.theme || fallback.theme,
+    notes: brief,
+    templateId: p.templateId,
+    intent: { tableKind: p.tableKind, include: p.include, vipRows: p.type === "birthday" ? 0 : 1 },
+    split: p.split,
+    perPlate: p.perPlate,
+    highlights: p.highlights.slice(0, 4),
+  };
+  return Response.json({ plan, source: "ai", model: ai.model.label });
+}

@@ -1,0 +1,6 @@
+# Keys live in Vercel environment variables, never in the upload
+.env*
+!.env.example
+node_modules
+.next
+*.log
