@@ -2,6 +2,8 @@
 
 **Hack2Skill PromptWar · Challenge 5: Celebration & Event Planner**
 
+**Live demo: https://eventcanvas-nine.vercel.app** (open a demo event from the home page)
+
 Plan weddings, birthdays and community events the way BookMyShow shows a theatre: as a **seat map**. You lay out the venue on a real-scale blueprint, and everything else is wired to it. Place 10 tables and the budget updates. Put a DJ booth down and "DJ" appears on your vendor checklist. Seat a guest and they get a "find my seat" link. An **AI co-planner (Groq, with Gemini as fallback)** can edit the plan for you in plain words.
 
 | Challenge requirement | Where it lives |
